@@ -35,7 +35,7 @@ enum OpenType {
     MS_READ_WRITE
 };
 
-class MediaStore final {
+class MEDIASCANNER_PUBLIC MediaStore final {
 private:
     MediaStorePrivate *p;
 

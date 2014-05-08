@@ -40,7 +40,7 @@ class MediaFile;
  * ensure that no state leaks from the first MediaFile to the second.
  */
 
-class MediaFileBuilder final {
+class MEDIASCANNER_PUBLIC MediaFileBuilder final {
 public:
     MediaFileBuilder(const std::string &filename);
     MediaFileBuilder(const MediaFile &mf);

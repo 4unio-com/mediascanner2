@@ -25,7 +25,7 @@
 
 namespace mediascanner {
 
-class MediaFile final {
+class MEDIASCANNER_PUBLIC MediaFile final {
 public:
 
     MediaFile(std::string filename) : filename(filename), content_type(""), etag(""), title(""), date(""), author(""),

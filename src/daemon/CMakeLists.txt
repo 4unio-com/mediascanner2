@@ -7,6 +7,7 @@ add_library(scannerstuff STATIC
   SubtreeWatcher.cc
   Scanner.cc
   util.cc
+  ../mediascanner/utils.cc
 )
 
 target_link_libraries(scannerstuff ${GST_LIBRARIES})

@@ -16,6 +16,9 @@ set_target_properties(mediascanner PROPERTIES
   VERSION 0.0.0
   SOVERSION 0
 )
+set_target_properties(mediascanner PROPERTIES
+  COMPILE_FLAGS "-fvisibility=hidden -fvisibility-inlines-hidden"
+)
 
 install(
   TARGETS mediascanner

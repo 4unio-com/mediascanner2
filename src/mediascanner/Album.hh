@@ -20,11 +20,12 @@
 #ifndef ALBUM_HH
 #define ALBUM_HH
 
+#include "scannercore.hh"
 #include <string>
 
 namespace mediascanner {
 
-class Album final {
+class MEDIASCANNER_PUBLIC Album final {
 public:
 
     Album(const std::string &title, const std::string &artist);

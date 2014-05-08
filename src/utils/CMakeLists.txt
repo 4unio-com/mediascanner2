@@ -7,6 +7,6 @@ add_executable(query query.cc)
 target_link_libraries(query mediascanner
 ${MEDIASCANNER_LDFLAGS})
 
-add_executable(scaletest scaletest.cc)
+add_executable(scaletest scaletest.cc ../mediascanner/utils.cc)
 target_link_libraries(scaletest mediascanner
 ${MEDIASCANNER_LDFLAGS})

@@ -20,6 +20,21 @@
 #ifndef SCANNERCORE_H
 #define SCANNERCORE_H
 
+#if defined _WIN32 || defined __CYGWIN__
+  #ifdef BUILDING_MEDIASCANNER
+    #define MEDIASCANNER_PUBLIC __declspec(dllexport)
+  #else
+    #define MEDIASCANNER_PUBLIC __declspec(dllimport)
+  #endif
+#else
+  #if defined __GNUC__
+    #define MEDIASCANNER_PUBLIC __attribute__ ((visibility("default")))
+  #else
+    #pragma message ("Compiler does not support symbol visibility.")
+    #define MEDIASCANNER_PUBLIC
+  #endif
+#endif
+
 namespace mediascanner {
 
 enum MediaType {
