@@ -89,6 +89,7 @@ std::vector<std::string> QtClient::queryArtists(const std::string &q, const medi
 }
 
 std::vector<mediascanner::MediaFile> QtClient::getAlbumSongs(const mediascanner::Album& album) const {
+    fprintf(stderr, "THIS TEXT SHOULD BE PRINTED DURING TESTS!\n");
     QDBusReply<QList<MediaFileWire>> reply = service.call("getAlbumSongs", QVariant::fromValue(AlbumWire(album)));
     std::vector<mediascanner::MediaFile> result;
     if(!reply.isValid()) {
