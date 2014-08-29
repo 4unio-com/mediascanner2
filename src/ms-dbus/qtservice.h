@@ -92,8 +92,8 @@ public Q_SLOTS:
     MediaFileWire lookup(const QString &filename) const;
     QList<MediaFileWire> query(const QString &q, int type, const QVariantMap &filter) const;
     QList<AlbumWire> queryAlbums(const QString &core_term, const QVariantMap &filter) const;
+    QStringList queryArtists(const QString &q, const QVariantMap &filter) const;
     /*
-    std::vector<std::string> queryArtists(const std::string &q, const Filter &filter) const override;
     std::vector<MediaFile> getAlbumSongs(const Album& album) const override;
     std::string getETag(const std::string &filename) const override;
     std::vector<MediaFile> listSongs(const Filter &filter) const override;

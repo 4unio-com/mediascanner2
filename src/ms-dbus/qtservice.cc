@@ -197,6 +197,14 @@ QList<AlbumWire> QtService::queryAlbums(const QString &core_term, const QVariant
     return result;
 }
 
+QStringList QtService::queryArtists(const QString &q, const QVariantMap &filter) const {
+    QStringList result;
+    for(const auto &a : store.queryArtists(q.toStdString(), vmap2filter(filter))) {
+        result.push_back(a.c_str());
+    }
+    return result;
+}
+
 /*
 QString QtService::ping() {
     return "pong";
