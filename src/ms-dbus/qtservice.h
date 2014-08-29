@@ -77,6 +77,9 @@ const QDBusArgument &operator>>(const QDBusArgument &argument, MediaFileWire &tt
 QDBusArgument &operator<<(QDBusArgument &argument, const AlbumWire &a);
 const QDBusArgument &operator>>(const QDBusArgument &argument, AlbumWire &a);
 
+mediascanner::Filter vmap2filter(const QVariantMap &filter);
+QVariantMap filter2vmap(const mediascanner::Filter &filter);
+
 namespace mediascanner {
 
 class QtService : public QDBusAbstractAdaptor {
@@ -96,12 +99,11 @@ public Q_SLOTS:
     QList<MediaFileWire> getAlbumSongs(const AlbumWire& album) const;
     QString getETag(const QString &filename) const;
     QList<MediaFileWire> listSongs(const QVariantMap &filter) const;
-    /*
-    std::vector<Album> listAlbums(const Filter &filter) const override;
-    std::vector<std::string> listArtists(const Filter &filter) const override;
-    std::vector<std::string> listAlbumArtists(const Filter &filter) const override;
-    std::vector<std::string> listGenres(const Filter &filter) const override;
-*/
+    QList<AlbumWire> listAlbums(const QVariantMap &filter) const;
+    QStringList listArtists(const QVariantMap &filter) const;
+    QStringList listAlbumArtists(const QVariantMap &filter) const;
+    QStringList listGenres(const QVariantMap &filter) const;
+
 private:
     MediaStore store;
 };

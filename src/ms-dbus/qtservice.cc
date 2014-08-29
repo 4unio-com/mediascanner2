@@ -134,7 +134,7 @@ mediascanner::Album AlbumWire::toAlbum() const {
     return mediascanner::Album(title.toStdString(), artist.toStdString());
 }
 
-static mediascanner::Filter vmap2filter(const QVariantMap &filter) {
+mediascanner::Filter vmap2filter(const QVariantMap &filter) {
     mediascanner::Filter f;
     auto a = filter.find("artist");
     if(a != filter.end()) {
@@ -164,6 +164,24 @@ static mediascanner::Filter vmap2filter(const QVariantMap &filter) {
     if(a != filter.end()) {
         f.setReverse(a->value<bool>());
     }
+    return f;
+}
+
+QVariantMap filter2vmap(const mediascanner::Filter &filter) {
+    QVariantMap f;
+    if(filter.hasArtist()) {
+        f["artist"] = QString(filter.getArtist().c_str());
+    }
+    if(filter.hasAlbumArtist()) {
+        f["album_artist"] = QString(filter.getAlbumArtist().c_str());
+    }
+    if(filter.hasGenre()) {
+        f["genre"] = QString(filter.getGenre().c_str());
+    }
+    f["offset"] = (int32_t)filter.getOffset();
+    f["limit"] = (int32_t)filter.getLimit();
+    f["order"] = (int32_t)filter.getOrder();
+    f["reverse"] = filter.getReverse();
     return f;
 }
 
@@ -225,10 +243,37 @@ QList<MediaFileWire> QtService::listSongs(const QVariantMap &filter) const {
     return result;
 }
 
-/*
-QString QtService::ping() {
-    return "pong";
+QList<AlbumWire> QtService::listAlbums(const QVariantMap &filter) const {
+    QList<AlbumWire> result;
+    for(const auto &a : store.listAlbums(vmap2filter(filter))) {
+        result.push_back(AlbumWire(a));
+    }
+    return result;
 }
-*/
+
+QStringList QtService::listArtists(const QVariantMap &filter) const {
+    QStringList result;
+    for(const auto &a : store.listArtists(vmap2filter(filter))) {
+        result.push_back(a.c_str());
+    }
+    return result;
+}
+
+QStringList QtService::listAlbumArtists(const QVariantMap &filter) const {
+    QStringList result;
+    for(const auto &a : store.listAlbumArtists(vmap2filter(filter))) {
+        result.push_back(a.c_str());
+    }
+    return result;
+}
+
+QStringList QtService::listGenres(const QVariantMap &filter) const {
+    QStringList result;
+    for(const auto &g : store.listGenres(vmap2filter(filter))) {
+        result.push_back(g.c_str());
+    }
+    return result;
+}
+
 
 }

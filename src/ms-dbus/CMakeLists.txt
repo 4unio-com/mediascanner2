@@ -35,7 +35,7 @@ install(
   DESTINATION ${CMAKE_INSTALL_DATADIR}/dbus-1/services
 )
 
-add_executable(ms-dbus-test main2.cc qtservice.cc qtservice.h)
+add_executable(ms-dbus-test main2.cc qtservice.cc qtservice.h qtclient.cc qtclient.h)
 target_link_libraries(ms-dbus-test mediascanner)
 qt5_use_modules(ms-dbus-test Core DBus)
 set_target_properties(ms-dbus-test PROPERTIES AUTOMOC TRUE)
