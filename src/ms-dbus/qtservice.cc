@@ -19,7 +19,7 @@
 
 #include"qtservice.h"
 #include <mediascanner/MediaFileBuilder.hh>
-
+#include <mediascanner/Filter.hh>
 
 QDBusArgument &operator<<(QDBusArgument &argument, const MediaFileWire &w) {
     argument.beginStructure();
@@ -119,6 +119,45 @@ QtService::~QtService() {
 
 MediaFileWire QtService::lookup(const QString filename) const {
     return MediaFileWire(store.lookup(filename.toStdString()));
+}
+
+QList<MediaFileWire> QtService::query(const QString &q, MediaType type, const QVariantMap &filter) const {
+    Filter f;
+    auto a = filter.find("artist");
+    if(a != filter.end()) {
+        f.setArtist(a->value<QString>().toStdString());
+    }
+    a = filter.find("album_artist");
+    if(a != filter.end()) {
+        f.setAlbumArtist(a->value<QString>().toStdString());
+    }
+    a = filter.find("genre");
+    if(a != filter.end()) {
+        f.setGenre(a->value<QString>().toStdString());
+    }
+    a = filter.find("offset");
+    if(a != filter.end()) {
+        f.setOffset(a->value<int32_t>());
+    }
+    a = filter.find("limit");
+    if(a != filter.end()) {
+        f.setLimit(a->value<int32_t>());
+    }
+    a = filter.find("order");
+    if(a != filter.end()) {
+        f.setOrder((MediaOrder)a->value<int32_t>());
+    }
+    a = filter.find("reverse");
+    if(a != filter.end()) {
+        f.setReverse(a->value<bool>());
+    }
+
+    QList<MediaFileWire> resultset;
+    auto res = store.query(q.toStdString(), type, f);
+    for(const auto &r : res) {
+        resultset.push_back(MediaFileWire(r));
+    }
+    return resultset;
 }
 
 /*

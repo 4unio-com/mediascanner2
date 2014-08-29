@@ -57,7 +57,9 @@ struct MediaFileWire {
     explicit MediaFileWire(const mediascanner::MediaFile &mf);
     mediascanner::MediaFile toMediaFile() const;
 };
+
 Q_DECLARE_METATYPE(MediaFileWire)
+Q_DECLARE_METATYPE(QVariantMap)
 
 QDBusArgument &operator<<(QDBusArgument &argument, const MediaFileWire &tt);
 const QDBusArgument &operator>>(const QDBusArgument &argument, MediaFileWire &tt);
@@ -75,8 +77,8 @@ public:
 public Q_SLOTS:
 
     MediaFileWire lookup(const QString filename) const;
+    QList<MediaFileWire> query(const QString &q, MediaType type, const QVariantMap &filter) const;
     /*
-    virtual std::vector<MediaFile> query(const std::string &q, MediaType type, const Filter &filter) const override;
     std::vector<Album> queryAlbums(const std::string &core_term, const Filter &filter) const override;
     std::vector<std::string> queryArtists(const std::string &q, const Filter &filter) const override;
     std::vector<MediaFile> getAlbumSongs(const Album& album) const override;

@@ -27,6 +27,7 @@ using namespace mediascanner;
 int main(int argc, char **argv) {
     QCoreApplication app(argc, argv);
     qDBusRegisterMetaType<MediaFileWire>();
+    qDBusRegisterMetaType<QVariantMap>();
 
     QtService *s = new QtService(&app);
     if(!QDBusConnection::sessionBus().registerService(MS_DBUS_NAME)) {
