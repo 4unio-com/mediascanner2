@@ -213,6 +213,18 @@ QList<MediaFileWire> QtService::getAlbumSongs(const AlbumWire& album) const {
     return result;
 }
 
+QString QtService::getETag(const QString &filename) const {
+    return QString(store.getETag(filename.toStdString()).c_str());
+}
+
+QList<MediaFileWire> QtService::listSongs(const QVariantMap &filter) const {
+    QList<MediaFileWire> result;
+    for(const auto &s : store.listSongs(vmap2filter(filter))) {
+        result.push_back(MediaFileWire(s));
+    }
+    return result;
+}
+
 /*
 QString QtService::ping() {
     return "pong";
