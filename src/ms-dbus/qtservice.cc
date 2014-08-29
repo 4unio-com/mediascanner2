@@ -205,6 +205,14 @@ QStringList QtService::queryArtists(const QString &q, const QVariantMap &filter)
     return result;
 }
 
+QList<MediaFileWire> QtService::getAlbumSongs(const AlbumWire& album) const {
+    QList<MediaFileWire> result;
+    for(const auto &a : store.getAlbumSongs(album.toAlbum())) {
+        result.push_back(MediaFileWire(a));
+    }
+    return result;
+}
+
 /*
 QString QtService::ping() {
     return "pong";
