@@ -34,3 +34,7 @@ install(
   FILES ${CMAKE_CURRENT_BINARY_DIR}/com.canonical.MediaScanner2.service
   DESTINATION ${CMAKE_INSTALL_DATADIR}/dbus-1/services
 )
+
+add_executable(ms-dbus-test main2.cc qtservice.cc qtservice.h)
+qt5_use_modules(ms-dbus-test Core DBus)
+set_target_properties(ms-dbus-test PROPERTIES AUTOMOC TRUE)
