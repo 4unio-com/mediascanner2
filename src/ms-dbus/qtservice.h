@@ -56,12 +56,26 @@ struct MediaFileWire {
     mediascanner::MediaFile toMediaFile() const;
 };
 
+struct AlbumWire {
+    QString title;
+    QString artist;
+
+    AlbumWire(){};
+    explicit AlbumWire(const mediascanner::Album &a);
+    mediascanner::Album toAlbum() const;
+};
+
 Q_DECLARE_METATYPE(MediaFileWire)
 Q_DECLARE_METATYPE(QVariantMap)
 Q_DECLARE_METATYPE(QList<MediaFileWire>)
+Q_DECLARE_METATYPE(AlbumWire)
+Q_DECLARE_METATYPE(QList<AlbumWire>)
 
 QDBusArgument &operator<<(QDBusArgument &argument, const MediaFileWire &tt);
 const QDBusArgument &operator>>(const QDBusArgument &argument, MediaFileWire &tt);
+
+QDBusArgument &operator<<(QDBusArgument &argument, const AlbumWire &a);
+const QDBusArgument &operator>>(const QDBusArgument &argument, AlbumWire &a);
 
 namespace mediascanner {
 
@@ -75,10 +89,10 @@ public:
 
 public Q_SLOTS:
 
-    MediaFileWire lookup(const QString filename) const;
+    MediaFileWire lookup(const QString &filename) const;
     QList<MediaFileWire> query(const QString &q, int type, const QVariantMap &filter) const;
+    QList<AlbumWire> queryAlbums(const QString &core_term, const QVariantMap &filter) const;
     /*
-    std::vector<Album> queryAlbums(const std::string &core_term, const Filter &filter) const override;
     std::vector<std::string> queryArtists(const std::string &q, const Filter &filter) const override;
     std::vector<MediaFile> getAlbumSongs(const Album& album) const override;
     std::string getETag(const std::string &filename) const override;

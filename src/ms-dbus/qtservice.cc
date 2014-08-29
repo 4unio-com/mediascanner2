@@ -20,6 +20,7 @@
 #include"qtservice.h"
 #include <mediascanner/MediaFileBuilder.hh>
 #include <mediascanner/Filter.hh>
+#include <mediascanner/Album.hh>
 
 QDBusArgument &operator<<(QDBusArgument &argument, const MediaFileWire &w) {
     argument.beginStructure();
@@ -67,6 +68,22 @@ const QDBusArgument &operator>>(const QDBusArgument &argument, MediaFileWire &w)
     return argument;
 }
 
+QDBusArgument &operator<<(QDBusArgument &argument, const AlbumWire &a) {
+    argument.beginStructure();
+    argument << a.title << a.artist;
+    argument.endStructure();
+    return argument;
+
+}
+
+const QDBusArgument &operator>>(const QDBusArgument &argument, AlbumWire &a) {
+    argument.beginStructure();
+    argument >> a.title >> a.artist;
+    argument.endStructure();
+    return argument;
+
+}
+
 MediaFileWire::MediaFileWire(const mediascanner::MediaFile &mf) {
     fname = mf.getFileName().c_str();
     contenttype = mf.getContentType().c_str();
@@ -108,21 +125,17 @@ mediascanner::MediaFile MediaFileWire::toMediaFile() const {
     return mediascanner::MediaFile(mfb);
 }
 
-
-namespace mediascanner {
-
-QtService::QtService(QObject *parent) : QDBusAbstractAdaptor(parent), store(MS_READ_ONLY) {
+AlbumWire::AlbumWire(const mediascanner::Album &a) {
+    title = a.getTitle().c_str();
+    artist = a.getArtist().c_str();
 }
 
-QtService::~QtService() {
+mediascanner::Album AlbumWire::toAlbum() const {
+    return mediascanner::Album(title.toStdString(), artist.toStdString());
 }
 
-MediaFileWire QtService::lookup(const QString filename) const {
-    return MediaFileWire(store.lookup(filename.toStdString()));
-}
-
-QList<MediaFileWire> QtService::query(const QString &q, int type, const QVariantMap &filter) const {
-    Filter f;
+static mediascanner::Filter vmap2filter(const QVariantMap &filter) {
+    mediascanner::Filter f;
     auto a = filter.find("artist");
     if(a != filter.end()) {
         f.setArtist(a->value<QString>().toStdString());
@@ -145,19 +158,43 @@ QList<MediaFileWire> QtService::query(const QString &q, int type, const QVariant
     }
     a = filter.find("order");
     if(a != filter.end()) {
-        f.setOrder((MediaOrder)a->value<int32_t>());
+        f.setOrder((mediascanner::MediaOrder)a->value<int32_t>());
     }
     a = filter.find("reverse");
     if(a != filter.end()) {
         f.setReverse(a->value<bool>());
     }
+    return f;
+}
 
+namespace mediascanner {
+
+QtService::QtService(QObject *parent) : QDBusAbstractAdaptor(parent), store(MS_READ_ONLY) {
+}
+
+QtService::~QtService() {
+}
+
+MediaFileWire QtService::lookup(const QString &filename) const {
+    return MediaFileWire(store.lookup(filename.toStdString()));
+}
+
+QList<MediaFileWire> QtService::query(const QString &q, int type, const QVariantMap &filter) const {
+    Filter f = vmap2filter(filter);
     QList<MediaFileWire> resultset;
     auto res = store.query(q.toStdString(), (MediaType)type, f);
     for(const auto &r : res) {
         resultset.push_back(MediaFileWire(r));
     }
     return resultset;
+}
+
+QList<AlbumWire> QtService::queryAlbums(const QString &core_term, const QVariantMap &filter) const {
+    QList<AlbumWire> result;
+    for(const auto &r : store.queryAlbums(core_term.toStdString(), vmap2filter(filter))) {
+        result.push_back(AlbumWire(r));
+    }
+    return result;
 }
 
 /*
