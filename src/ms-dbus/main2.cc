@@ -20,9 +20,14 @@
 #include"qtservice.h"
 #include<QCoreApplication>
 #include<QDBusConnection>
+#include <QDBusMetaType>
+
+using namespace mediascanner;
 
 int main(int argc, char **argv) {
     QCoreApplication app(argc, argv);
+    qDBusRegisterMetaType<MediaFileWire>();
+
     QtService *s = new QtService(&app);
     if(!QDBusConnection::sessionBus().registerService(MS_DBUS_NAME)) {
         printf("Service name already taken.\n");

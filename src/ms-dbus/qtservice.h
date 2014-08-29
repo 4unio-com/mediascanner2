@@ -21,18 +21,48 @@
 #define QT_SERVICE_H
 
 #include <QDBusAbstractAdaptor>
-#include <QStringList>
-#include <QDBusVariant>
+#include <QDBusArgument>
+#include <mediascanner/MediaStoreBase.hh>
+#include <mediascanner/MediaFile.hh>
+#include <mediascanner/MediaStore.hh>
 
-/*
-typedef QMap<QString, QDBusVariant> Hints;
-
-Q_DECLARE_METATYPE(Hints)
-*/
+//Q_DECLARE_METATYPE(mediascanner::MediaFile)
 
 #define MS_DBUS_INTERFACE "com.canonical.MediaScanner2"
 #define MS_DBUS_OBJECT "/com/canonical/MediaScanner2"
 #define MS_DBUS_NAME "com.canonical.MediaScanner2"
+
+// Trying to register MediaFile directly fails. Seems like a bug in Qt.
+// Hence this workaround.
+struct MediaFileWire {
+    QString fname;
+    QString contenttype;
+    QString etag;
+    QString title;
+    QString author;
+    QString album;
+    QString albumartist;
+    QString date;
+    QString genre;
+    int32_t discnumber;
+    int32_t tracknumber;
+    int32_t duration;
+    int32_t width;
+    int32_t height;
+    double latitude;
+    double longitude;
+    int32_t type;
+
+    MediaFileWire() {};
+    explicit MediaFileWire(const mediascanner::MediaFile &mf);
+    mediascanner::MediaFile toMediaFile() const;
+};
+Q_DECLARE_METATYPE(MediaFileWire)
+
+QDBusArgument &operator<<(QDBusArgument &argument, const MediaFileWire &tt);
+const QDBusArgument &operator>>(const QDBusArgument &argument, MediaFileWire &tt);
+
+namespace mediascanner {
 
 class QtService : public QDBusAbstractAdaptor {
     Q_OBJECT
@@ -43,7 +73,24 @@ public:
     ~QtService();
 
 public Q_SLOTS:
-    QString ping();
+
+    MediaFileWire lookup(const QString filename) const;
+    /*
+    virtual std::vector<MediaFile> query(const std::string &q, MediaType type, const Filter &filter) const override;
+    std::vector<Album> queryAlbums(const std::string &core_term, const Filter &filter) const override;
+    std::vector<std::string> queryArtists(const std::string &q, const Filter &filter) const override;
+    std::vector<MediaFile> getAlbumSongs(const Album& album) const override;
+    std::string getETag(const std::string &filename) const override;
+    std::vector<MediaFile> listSongs(const Filter &filter) const override;
+    std::vector<Album> listAlbums(const Filter &filter) const override;
+    std::vector<std::string> listArtists(const Filter &filter) const override;
+    std::vector<std::string> listAlbumArtists(const Filter &filter) const override;
+    std::vector<std::string> listGenres(const Filter &filter) const override;
+*/
+private:
+    MediaStore store;
 };
+
+}
 
 #endif

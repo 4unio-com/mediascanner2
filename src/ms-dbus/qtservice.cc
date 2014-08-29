@@ -18,14 +18,113 @@
  */
 
 #include"qtservice.h"
+#include <mediascanner/MediaFileBuilder.hh>
 
-QtService::QtService(QObject *parent) : QDBusAbstractAdaptor(parent) {
 
+QDBusArgument &operator<<(QDBusArgument &argument, const MediaFileWire &w) {
+    argument.beginStructure();
+    argument << w.fname
+        << w.contenttype
+        << w.etag
+        << w.title
+        << w.author
+        << w.album
+        << w.albumartist
+        << w.date
+        << w.genre
+        << w.discnumber
+        << w.tracknumber
+        << w.duration
+        << w.width
+        << w.height
+        << w.latitude
+        << w.longitude
+        << w.type;
+    argument.endStructure();
+    return argument;
+
+}
+const QDBusArgument &operator>>(const QDBusArgument &argument, MediaFileWire &w) {
+    argument.beginStructure();
+    argument >> w.fname
+        >> w.contenttype
+        >> w.etag
+        >> w.title
+        >> w.author
+        >> w.album
+        >> w.albumartist
+        >> w.date
+        >> w.genre
+        >> w.discnumber
+        >> w.tracknumber
+        >> w.duration
+        >> w.width
+        >> w.height
+        >> w.latitude
+        >> w.longitude
+        >> w.type;
+    argument.endStructure();
+    return argument;
+}
+
+MediaFileWire::MediaFileWire(const mediascanner::MediaFile &mf) {
+    fname = mf.getFileName().c_str();
+    contenttype = mf.getContentType().c_str();
+    etag = mf.getETag().c_str();
+    title = mf.getTitle().c_str();
+    author = mf.getAuthor().c_str();
+    album = mf.getAlbum().c_str();
+    albumartist = mf.getAlbumArtist().c_str();
+    date = mf.getDate().c_str();
+    genre = mf.getGenre().c_str();
+    discnumber = mf.getDiscNumber();
+    tracknumber = mf.getTrackNumber();
+    duration = mf.getDuration();
+    width = mf.getWidth();
+    height = mf.getHeight();
+    latitude = mf.getLatitude();
+    longitude = mf.getLongitude();
+    type = mf.getType();
+}
+
+mediascanner::MediaFile MediaFileWire::toMediaFile() const {
+    mediascanner::MediaFileBuilder mfb(fname.toStdString());
+    mfb.setETag(etag.toStdString())
+             .setTitle(title.toStdString())
+             .setContentType(contenttype.toStdString())
+             .setAuthor(author.toStdString())
+             .setAlbum(album.toStdString())
+             .setAlbumArtist(albumartist.toStdString())
+             .setDate(date.toStdString())
+             .setGenre(genre.toStdString())
+             .setDiscNumber(discnumber)
+             .setTrackNumber(tracknumber)
+             .setDuration(duration)
+             .setWidth(width)
+             .setHeight(height)
+             .setLatitude(latitude)
+             .setLongitude(longitude)
+             .setType((mediascanner::MediaType) type);
+    return mediascanner::MediaFile(mfb);
+}
+
+
+namespace mediascanner {
+
+QtService::QtService(QObject *parent) : QDBusAbstractAdaptor(parent), store(MS_READ_ONLY) {
 }
 
 QtService::~QtService() {
 }
 
+MediaFileWire QtService::lookup(const QString filename) const {
+    return MediaFileWire(store.lookup(filename.toStdString()));
+}
+
+/*
 QString QtService::ping() {
     return "pong";
+}
+*/
+
 }
