@@ -25,29 +25,17 @@
 #include <QDebug>
 #include <QQmlEngine>
 
-#include <core/dbus/asio/executor.h>
 #include <mediascanner/Filter.hh>
 #include <mediascanner/MediaStore.hh>
-#include <ms-dbus/service-stub.hh>
+#include <ms-dbus/qtclient.h>
 
 using namespace mediascanner::qml;
-
-static core::dbus::Bus::Ptr the_session_bus() {
-    static core::dbus::Bus::Ptr bus = std::make_shared<core::dbus::Bus>(
-        core::dbus::WellKnownBus::session);
-    static core::dbus::Executor::Ptr executor = core::dbus::asio::make_executor(bus);
-    static std::once_flag once;
-
-    std::call_once(once, []() {bus->install_executor(executor);});
-
-    return bus;
-}
 
 MediaStoreWrapper::MediaStoreWrapper(QObject *parent)
     : QObject(parent) {
     const char *use_dbus = getenv("MEDIASCANNER_USE_DBUS");
     if (use_dbus != nullptr && !strcmp(use_dbus, "1")) {
-        store.reset(new mediascanner::dbus::ServiceStub(the_session_bus()));
+        store.reset(new QtClient(this));
     } else {
         store.reset(new mediascanner::MediaStore(MS_READ_ONLY));
     }

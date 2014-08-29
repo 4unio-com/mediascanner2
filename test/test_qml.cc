@@ -32,7 +32,7 @@ public:
                 core::dbus::Fixture::default_session_bus_config_file(),
                 core::dbus::Fixture::default_system_bus_config_file()));
 
-        daemon.setProgram(TEST_DIR "/../src/ms-dbus/mediascanner-dbus-2.0");
+        daemon.setProgram(TEST_DIR "/../src/ms-dbus/ms-dbus-test");
         daemon.setProcessChannelMode(QProcess::ForwardedChannels);
         daemon.start();
         daemon.closeWriteChannel();

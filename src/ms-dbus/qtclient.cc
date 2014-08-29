@@ -19,6 +19,7 @@
 
 #include"qtclient.h"
 #include"qtservice.h"
+#include <QDBusMetaType>
 #include<mediascanner/Album.hh>
 #include<QDBusReply>
 #include<QDebug>
@@ -27,6 +28,11 @@ using namespace mediascanner;
 
 QtClient::QtClient(QObject *parent) : QObject(parent),
     service(MS_DBUS_NAME, MS_DBUS_OBJECT, MS_DBUS_INTERFACE) {
+    qDBusRegisterMetaType<MediaFileWire>();
+    qDBusRegisterMetaType<AlbumWire>();
+    qDBusRegisterMetaType<QList<MediaFileWire>>();
+    qDBusRegisterMetaType<QList<AlbumWire>>();
+    qDBusRegisterMetaType<QVariantMap>();
 
 }
 

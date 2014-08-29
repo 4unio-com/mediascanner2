@@ -18,6 +18,7 @@
  */
 
 #include"qtservice.h"
+#include <QDBusMetaType>
 #include <mediascanner/MediaFileBuilder.hh>
 #include <mediascanner/Filter.hh>
 #include <mediascanner/Album.hh>
@@ -188,13 +189,26 @@ QVariantMap filter2vmap(const mediascanner::Filter &filter) {
 namespace mediascanner {
 
 QtService::QtService(QObject *parent) : QDBusAbstractAdaptor(parent), store(MS_READ_ONLY) {
+    qDBusRegisterMetaType<MediaFileWire>();
+    qDBusRegisterMetaType<AlbumWire>();
+    qDBusRegisterMetaType<QList<MediaFileWire>>();
+    qDBusRegisterMetaType<QList<AlbumWire>>();
+    qDBusRegisterMetaType<QVariantMap>();
 }
 
 QtService::~QtService() {
 }
 
 MediaFileWire QtService::lookup(const QString &filename) const {
-    return MediaFileWire(store.lookup(filename.toStdString()));
+    try {
+        return MediaFileWire(store.lookup(filename.toStdString()));
+    } catch(...) {
+    }
+    return MediaFileWire();
+}
+
+QList<MediaFileWire> QtService::query(const QString &q, int type) const {
+    return query(q, type, QVariantMap());
 }
 
 QList<MediaFileWire> QtService::query(const QString &q, int type, const QVariantMap &filter) const {

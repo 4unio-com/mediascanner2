@@ -5,7 +5,10 @@ add_library(ms-dbus STATIC
   dbus-codec.cc
   service-skeleton.cc
   service-stub.cc
+  qtservice.cc qtservice.h qtclient.cc qtclient.h
 )
+
+qt5_use_modules(ms-dbus Core DBus)
 
 target_link_libraries(ms-dbus
   mediascanner
@@ -13,6 +16,7 @@ target_link_libraries(ms-dbus
   ${APPARMOR_LDFLAGS})
 # Compile with -fPIC, since this code is linked into the QML plugin.
 set_target_properties(ms-dbus PROPERTIES COMPILE_FLAGS "-fPIC")
+set_target_properties(ms-dbus PROPERTIES AUTOMOC TRUE)
 
 add_executable(mediascanner-dbus
   main.cc

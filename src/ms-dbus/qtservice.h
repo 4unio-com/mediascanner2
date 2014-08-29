@@ -93,6 +93,7 @@ public:
 public Q_SLOTS:
 
     MediaFileWire lookup(const QString &filename) const;
+    QList<MediaFileWire> query(const QString &q, int type) const;
     QList<MediaFileWire> query(const QString &q, int type, const QVariantMap &filter) const;
     QList<AlbumWire> queryAlbums(const QString &core_term, const QVariantMap &filter) const;
     QStringList queryArtists(const QString &q, const QVariantMap &filter) const;
