@@ -67,37 +67,109 @@ std::vector<mediascanner::Album> QtClient::queryAlbums(const std::string &core_t
         }
     }
     return result;
-
 }
 
 std::vector<std::string> QtClient::queryArtists(const std::string &q, const mediascanner::Filter &filter) const {
-
+    QDBusReply<QStringList> reply = service.call("queryArtists", q.c_str(), filter2vmap(filter));
+    std::vector<std::string> result;
+    if(!reply.isValid()) {
+        qWarning() << "DBus call failed: " << reply.error().message() << "\n";
+    } else {
+        for(const auto &a : reply.value()) {
+            result.push_back(a.toStdString());
+        }
+    }
+    return result;
 }
 
 std::vector<mediascanner::MediaFile> QtClient::getAlbumSongs(const mediascanner::Album& album) const {
-
+    QDBusReply<QList<MediaFileWire>> reply = service.call("getAlbumSongs", QVariant::fromValue(AlbumWire(album)));
+    std::vector<mediascanner::MediaFile> result;
+    if(!reply.isValid()) {
+        qWarning() << "DBus call failed: " << reply.error().message() << "\n";
+    } else {
+        for(const auto &s : reply.value()) {
+            result.push_back(s.toMediaFile());
+        }
+    }
+    return result;
 }
 
 std::string QtClient::getETag(const std::string &filename) const {
-
+    QDBusReply<QString> reply = service.call("getEtag", filename.c_str());
+    std::string result;
+    if(!reply.isValid()) {
+        qWarning() << "DBus call failed: " << reply.error().message() << "\n";
+    } else {
+        result = reply.value().toStdString();
+    }
+    return result;
 }
 
 std::vector<mediascanner::MediaFile> QtClient::listSongs(const mediascanner::Filter &filter) const {
-
+    QDBusReply<QList<MediaFileWire>> reply = service.call("listSongs", filter2vmap(filter));
+    std::vector<mediascanner::MediaFile> result;
+    if(!reply.isValid()) {
+        qWarning() << "DBus call failed: " << reply.error().message() << "\n";
+    } else {
+        for(const auto &s : reply.value()) {
+            result.push_back(s.toMediaFile());
+        }
+    }
+    return result;
 }
 
 std::vector<mediascanner::Album> QtClient::listAlbums(const mediascanner::Filter &filter) const {
+    QDBusReply<QList<AlbumWire>> reply = service.call("getAlbumSongs", filter2vmap(filter));
+    std::vector<mediascanner::Album> result;
+    if(!reply.isValid()) {
+        qWarning() << "DBus call failed: " << reply.error().message() << "\n";
+    } else {
+        for(const auto &a : reply.value()) {
+            result.push_back(a.toAlbum());
+        }
+    }
+    return result;
 
 }
 
 std::vector<std::string> QtClient::listArtists(const mediascanner::Filter &filter) const {
+    QDBusReply<QStringList> reply = service.call("listArtists", filter2vmap(filter));
+    std::vector<std::string> result;
+    if(!reply.isValid()) {
+        qWarning() << "DBus call failed: " << reply.error().message() << "\n";
+    } else {
+        for(const auto &a : reply.value()) {
+            result.push_back(a.toStdString());
+        }
+    }
+    return result;
 
 }
 
 std::vector<std::string> QtClient::listAlbumArtists(const mediascanner::Filter &filter) const {
+    QDBusReply<QStringList> reply = service.call("listAlbumArtists", filter2vmap(filter));
+    std::vector<std::string> result;
+    if(!reply.isValid()) {
+        qWarning() << "DBus call failed: " << reply.error().message() << "\n";
+    } else {
+        for(const auto &a : reply.value()) {
+            result.push_back(a.toStdString());
+        }
+    }
+    return result;
 
 }
 
 std::vector<std::string> QtClient::listGenres(const mediascanner::Filter &filter) const {
-
+    QDBusReply<QStringList> reply = service.call("listGenres", filter2vmap(filter));
+    std::vector<std::string> result;
+    if(!reply.isValid()) {
+        qWarning() << "DBus call failed: " << reply.error().message() << "\n";
+    } else {
+        for(const auto &a : reply.value()) {
+            result.push_back(a.toStdString());
+        }
+    }
+    return result;
 }
