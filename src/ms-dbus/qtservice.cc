@@ -121,7 +121,7 @@ MediaFileWire QtService::lookup(const QString filename) const {
     return MediaFileWire(store.lookup(filename.toStdString()));
 }
 
-QList<MediaFileWire> QtService::query(const QString &q, MediaType type, const QVariantMap &filter) const {
+QList<MediaFileWire> QtService::query(const QString &q, int type, const QVariantMap &filter) const {
     Filter f;
     auto a = filter.find("artist");
     if(a != filter.end()) {
@@ -153,7 +153,7 @@ QList<MediaFileWire> QtService::query(const QString &q, MediaType type, const QV
     }
 
     QList<MediaFileWire> resultset;
-    auto res = store.query(q.toStdString(), type, f);
+    auto res = store.query(q.toStdString(), (MediaType)type, f);
     for(const auto &r : res) {
         resultset.push_back(MediaFileWire(r));
     }

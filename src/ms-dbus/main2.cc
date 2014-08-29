@@ -27,6 +27,7 @@ using namespace mediascanner;
 int main(int argc, char **argv) {
     QCoreApplication app(argc, argv);
     qDBusRegisterMetaType<MediaFileWire>();
+    qDBusRegisterMetaType<QList<MediaFileWire>>();
     qDBusRegisterMetaType<QVariantMap>();
 
     QtService *s = new QtService(&app);

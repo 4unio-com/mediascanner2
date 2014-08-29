@@ -26,8 +26,6 @@
 #include <mediascanner/MediaFile.hh>
 #include <mediascanner/MediaStore.hh>
 
-//Q_DECLARE_METATYPE(mediascanner::MediaFile)
-
 #define MS_DBUS_INTERFACE "com.canonical.MediaScanner2"
 #define MS_DBUS_OBJECT "/com/canonical/MediaScanner2"
 #define MS_DBUS_NAME "com.canonical.MediaScanner2"
@@ -60,6 +58,7 @@ struct MediaFileWire {
 
 Q_DECLARE_METATYPE(MediaFileWire)
 Q_DECLARE_METATYPE(QVariantMap)
+Q_DECLARE_METATYPE(QList<MediaFileWire>)
 
 QDBusArgument &operator<<(QDBusArgument &argument, const MediaFileWire &tt);
 const QDBusArgument &operator>>(const QDBusArgument &argument, MediaFileWire &tt);
@@ -77,7 +76,7 @@ public:
 public Q_SLOTS:
 
     MediaFileWire lookup(const QString filename) const;
-    QList<MediaFileWire> query(const QString &q, MediaType type, const QVariantMap &filter) const;
+    QList<MediaFileWire> query(const QString &q, int type, const QVariantMap &filter) const;
     /*
     std::vector<Album> queryAlbums(const std::string &core_term, const Filter &filter) const override;
     std::vector<std::string> queryArtists(const std::string &q, const Filter &filter) const override;
