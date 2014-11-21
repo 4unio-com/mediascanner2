@@ -28,7 +28,11 @@
 using namespace mediascanner;
 
 QtClient::QtClient(QObject *parent) : QObject(parent) {
-    service = new ComCanonicalMediascanner2(MS_DBUS_NAME, MS_DBUS_OBJECT, QDBusConnection::sessionBus(), this);
+    const char *busname = getenv("MEDIASCANNER_DBUS_NAME");
+    if(!busname) {
+        busname = MS_DBUS_NAME;
+    }
+    service = new ComCanonicalMediascanner2(busname, MS_DBUS_OBJECT, QDBusConnection::sessionBus(), this);
     qDBusRegisterMetaType<MediaFileWire>();
     qDBusRegisterMetaType<AlbumWire>();
     qDBusRegisterMetaType<QList<MediaFileWire>>();

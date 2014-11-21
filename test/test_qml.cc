@@ -24,13 +24,9 @@ public:
             throw std::runtime_error("Could not create temporary directory");
         }
         setenv("MEDIASCANNER_CACHEDIR", db_path.c_str(), true);
+        setenv("MEDIASCANNER_DBUS_NAME", "com.canonical.mediascanner2qmltest", true);
         populate();
 
-        // Start up private bus, and start daemon.
-        dbus_fixture.reset(
-            new core::dbus::Fixture(
-                core::dbus::Fixture::default_session_bus_config_file(),
-                core::dbus::Fixture::default_system_bus_config_file()));
 
         daemon.setProgram(TEST_DIR "/../src/ms-dbus/ms-dbus-test");
         daemon.setProcessChannelMode(QProcess::ForwardedChannels);
@@ -45,8 +41,6 @@ public:
         if (!daemon.waitForFinished()) {
             fprintf(stderr, "Failed to stop mediascanner-dbus-2.0\n");
         }
-
-        dbus_fixture.reset();
 
         if (system("rm -rf \"$MEDIASCANNER_CACHEDIR\"") == -1) {
             throw std::runtime_error("rm -rf failed");
@@ -154,7 +148,6 @@ public:
 
 private:
     std::string db_path;
-    std::unique_ptr<core::dbus::Fixture> dbus_fixture;
     QProcess daemon;
 };
 

@@ -25,9 +25,16 @@ using namespace mediascanner;
 
 int main(int argc, char **argv) {
     QCoreApplication app(argc, argv);
+    const char *busname = getenv("MEDIASCANNER_DBUS_NAME");
 
+    if(argc > 1) {
+        busname = argv[1];
+    }
+    if(!busname) {
+        busname = MS_DBUS_NAME;
+    }
     QtService *s = new QtService(&app);
-    if(!QDBusConnection::sessionBus().registerService(argc == 1 ? MS_DBUS_NAME : argv[1])) {
+    if(!QDBusConnection::sessionBus().registerService(busname)) {
         printf("Service name already taken.\n");
         return 1;
     }
