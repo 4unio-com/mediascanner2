@@ -28,6 +28,8 @@
 #include<mediascanner/Filter.hh>
 #include<vector>
 
+class ComCanonicalMediascanner2;
+
 class QtClient : public QObject, public virtual mediascanner::MediaStoreBase {
 public:
 
@@ -50,7 +52,7 @@ public:
     virtual std::vector<std::string>listGenres(const mediascanner::Filter &filter) const override;
 
 private:
-    mutable QDBusInterface service;
+    mutable ComCanonicalMediascanner2 *service;
 };
 
 #endif

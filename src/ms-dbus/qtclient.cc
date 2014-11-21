@@ -19,6 +19,7 @@
 
 #include"qtclient.h"
 #include"qtservice.h"
+#include"comcanonicalmediascanner2.h"
 #include <QDBusMetaType>
 #include<mediascanner/Album.hh>
 #include<QDBusReply>
@@ -26,8 +27,8 @@
 
 using namespace mediascanner;
 
-QtClient::QtClient(QObject *parent) : QObject(parent),
-    service(MS_DBUS_NAME, MS_DBUS_OBJECT, MS_DBUS_INTERFACE) {
+QtClient::QtClient(QObject *parent) : QObject(parent) {
+    service = new ComCanonicalMediascanner2(MS_DBUS_NAME, MS_DBUS_OBJECT, QDBusConnection::sessionBus(), this);
     qDBusRegisterMetaType<MediaFileWire>();
     qDBusRegisterMetaType<AlbumWire>();
     qDBusRegisterMetaType<QList<MediaFileWire>>();
@@ -41,7 +42,7 @@ QtClient:: ~QtClient() {
 
 
 mediascanner::MediaFile QtClient::lookup(const std::string &filename) const {
-    QDBusReply<MediaFileWire> reply = service.call("lookup", QString(filename.c_str()));
+    QDBusReply<MediaFileWire> reply = service->lookup(filename.c_str());
     if(!reply.isValid()) {
         qWarning() << "DBus call failed: " << reply.error().message() << "\n";
         return MediaFile();
@@ -50,7 +51,7 @@ mediascanner::MediaFile QtClient::lookup(const std::string &filename) const {
 }
 
 std::vector<mediascanner::MediaFile> QtClient::query(const std::string &q, mediascanner::MediaType type, const mediascanner::Filter& filter) const {
-    QDBusReply<QList<MediaFileWire>> reply = service.call("query", q.c_str(), (int32_t)(type), filter2vmap(filter));
+    QDBusReply<QList<MediaFileWire>> reply = service->query(q.c_str(), (int32_t)(type), filter2vmap(filter));
     std::vector<mediascanner::MediaFile> result;
     if(!reply.isValid()) {
         qWarning() << "DBus call failed: " << reply.error().message() << "\n";
@@ -63,7 +64,7 @@ std::vector<mediascanner::MediaFile> QtClient::query(const std::string &q, media
 }
 
 std::vector<mediascanner::Album> QtClient::queryAlbums(const std::string &core_term, const mediascanner::Filter &filter) const {
-    QDBusReply<QList<AlbumWire>> reply = service.call("queryAlbums", core_term.c_str(), filter2vmap(filter));
+    QDBusReply<QList<AlbumWire>> reply = service->queryAlbums(core_term.c_str(), filter2vmap(filter));
     std::vector<mediascanner::Album> result;
     if(!reply.isValid()) {
         qWarning() << "DBus call failed: " << reply.error().message() << "\n";
@@ -76,7 +77,7 @@ std::vector<mediascanner::Album> QtClient::queryAlbums(const std::string &core_t
 }
 
 std::vector<std::string> QtClient::queryArtists(const std::string &q, const mediascanner::Filter &filter) const {
-    QDBusReply<QStringList> reply = service.call("queryArtists", q.c_str(), filter2vmap(filter));
+    QDBusReply<QStringList> reply = service->queryArtists(q.c_str(), filter2vmap(filter));
     std::vector<std::string> result;
     if(!reply.isValid()) {
         qWarning() << "DBus call failed: " << reply.error().message() << "\n";
@@ -89,8 +90,7 @@ std::vector<std::string> QtClient::queryArtists(const std::string &q, const medi
 }
 
 std::vector<mediascanner::MediaFile> QtClient::getAlbumSongs(const mediascanner::Album& album) const {
-    fprintf(stderr, "THIS TEXT SHOULD BE PRINTED DURING TESTS!\n");
-    QDBusReply<QList<MediaFileWire>> reply = service.call("getAlbumSongs", QVariant::fromValue(AlbumWire(album)));
+    QDBusReply<QList<MediaFileWire>> reply = service->getAlbumSongs(AlbumWire(album));
     std::vector<mediascanner::MediaFile> result;
     if(!reply.isValid()) {
         qWarning() << "DBus call failed: " << reply.error().message() << "\n";
@@ -103,7 +103,7 @@ std::vector<mediascanner::MediaFile> QtClient::getAlbumSongs(const mediascanner:
 }
 
 std::string QtClient::getETag(const std::string &filename) const {
-    QDBusReply<QString> reply = service.call("getEtag", filename.c_str());
+    QDBusReply<QString> reply = service->getETag(filename.c_str());
     std::string result;
     if(!reply.isValid()) {
         qWarning() << "DBus call failed: " << reply.error().message() << "\n";
@@ -114,7 +114,7 @@ std::string QtClient::getETag(const std::string &filename) const {
 }
 
 std::vector<mediascanner::MediaFile> QtClient::listSongs(const mediascanner::Filter &filter) const {
-    QDBusReply<QList<MediaFileWire>> reply = service.call("listSongs", filter2vmap(filter));
+    QDBusReply<QList<MediaFileWire>> reply = service->listSongs(filter2vmap(filter));
     std::vector<mediascanner::MediaFile> result;
     if(!reply.isValid()) {
         qWarning() << "DBus call failed: " << reply.error().message() << "\n";
@@ -127,7 +127,7 @@ std::vector<mediascanner::MediaFile> QtClient::listSongs(const mediascanner::Fil
 }
 
 std::vector<mediascanner::Album> QtClient::listAlbums(const mediascanner::Filter &filter) const {
-    QDBusReply<QList<AlbumWire>> reply = service.call("getAlbumSongs", filter2vmap(filter));
+    QDBusReply<QList<AlbumWire>> reply = service->listAlbums(filter2vmap(filter));
     std::vector<mediascanner::Album> result;
     if(!reply.isValid()) {
         qWarning() << "DBus call failed: " << reply.error().message() << "\n";
@@ -141,7 +141,7 @@ std::vector<mediascanner::Album> QtClient::listAlbums(const mediascanner::Filter
 }
 
 std::vector<std::string> QtClient::listArtists(const mediascanner::Filter &filter) const {
-    QDBusReply<QStringList> reply = service.call("listArtists", filter2vmap(filter));
+    QDBusReply<QStringList> reply = service->listArtists(filter2vmap(filter));
     std::vector<std::string> result;
     if(!reply.isValid()) {
         qWarning() << "DBus call failed: " << reply.error().message() << "\n";
@@ -155,7 +155,7 @@ std::vector<std::string> QtClient::listArtists(const mediascanner::Filter &filte
 }
 
 std::vector<std::string> QtClient::listAlbumArtists(const mediascanner::Filter &filter) const {
-    QDBusReply<QStringList> reply = service.call("listAlbumArtists", filter2vmap(filter));
+    QDBusReply<QStringList> reply = service->listAlbumArtists(filter2vmap(filter));
     std::vector<std::string> result;
     if(!reply.isValid()) {
         qWarning() << "DBus call failed: " << reply.error().message() << "\n";
@@ -169,7 +169,7 @@ std::vector<std::string> QtClient::listAlbumArtists(const mediascanner::Filter &
 }
 
 std::vector<std::string> QtClient::listGenres(const mediascanner::Filter &filter) const {
-    QDBusReply<QStringList> reply = service.call("listGenres", filter2vmap(filter));
+    QDBusReply<QStringList> reply = service->listGenres(filter2vmap(filter));
     std::vector<std::string> result;
     if(!reply.isValid()) {
         qWarning() << "DBus call failed: " << reply.error().message() << "\n";
