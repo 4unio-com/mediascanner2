@@ -40,12 +40,11 @@ QtClient::QtClient(QObject *parent) : QObject(parent) {
 QtClient:: ~QtClient() {
 }
 
-
 mediascanner::MediaFile QtClient::lookup(const std::string &filename) const {
-    QDBusReply<MediaFileWire> reply = service->lookup(filename.c_str());
-    if(!reply.isValid()) {
-        qWarning() << "DBus call failed: " << reply.error().message() << "\n";
-        return MediaFile();
+    QDBusPendingReply<MediaFileWire> reply = service->lookup(filename.c_str());
+    reply.waitForFinished();
+    if(!reply.isValid() || reply.isError()) {
+        throw std::runtime_error(reply.error().message().toUtf8().data());
     }
     return reply.value().toMediaFile();
 }

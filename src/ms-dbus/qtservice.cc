@@ -19,6 +19,7 @@
 
 #include"qtservice.h"
 #include <QDBusMetaType>
+#include <QDBusConnection>
 #include <mediascanner/MediaFileBuilder.hh>
 #include <mediascanner/Filter.hh>
 #include <mediascanner/Album.hh>
@@ -203,11 +204,18 @@ QtService::QtService(QObject *parent) : QDBusAbstractAdaptor(parent), store(MS_R
 QtService::~QtService() {
 }
 
-MediaFileWire QtService::lookup(const QString &filename) const {
+MediaFileWire QtService::lookup(const QString &filename, const QDBusMessage &message) const {
+    std::string errormessage;
     try {
         return MediaFileWire(store.lookup(filename.toStdString()));
+    } catch(const std::exception &e) {
+        errormessage = e.what();
     } catch(...) {
+        errormessage = "Unknown error.";
     }
+    message.setDelayedReply(true);
+    auto errorreply = message.createErrorReply(QDBusError::InternalError, errormessage.c_str());
+    QDBusConnection::sessionBus().send(errorreply);
     return MediaFileWire();
 }
 
