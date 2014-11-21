@@ -71,7 +71,7 @@ const QDBusArgument &operator>>(const QDBusArgument &argument, MediaFileWire &w)
 
 QDBusArgument &operator<<(QDBusArgument &argument, const AlbumWire &a) {
     argument.beginStructure();
-    argument << a.title << a.artist;
+    argument << a.title << a.artist << a.date << a.genre << a.artfile;
     argument.endStructure();
     return argument;
 
@@ -79,7 +79,7 @@ QDBusArgument &operator<<(QDBusArgument &argument, const AlbumWire &a) {
 
 const QDBusArgument &operator>>(const QDBusArgument &argument, AlbumWire &a) {
     argument.beginStructure();
-    argument >> a.title >> a.artist;
+    argument >> a.title >> a.artist >> a.date >> a.genre >> a.artfile;
     argument.endStructure();
     return argument;
 
@@ -129,10 +129,14 @@ mediascanner::MediaFile MediaFileWire::toMediaFile() const {
 AlbumWire::AlbumWire(const mediascanner::Album &a) {
     title = a.getTitle().c_str();
     artist = a.getArtist().c_str();
+    date = a.getDate().c_str();
+    genre = a.getGenre().c_str();
+    artfile = a.getArtFile().c_str();
 }
 
 mediascanner::Album AlbumWire::toAlbum() const {
-    return mediascanner::Album(title.toStdString(), artist.toStdString());
+    return mediascanner::Album(title.toStdString(), artist.toStdString(),
+            date.toStdString(), genre.toStdString(), artfile.toStdString());
 }
 
 mediascanner::Filter vmap2filter(const QVariantMap &filter) {

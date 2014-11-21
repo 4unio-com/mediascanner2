@@ -27,7 +27,7 @@ int main(int argc, char **argv) {
     QCoreApplication app(argc, argv);
 
     QtService *s = new QtService(&app);
-    if(!QDBusConnection::sessionBus().registerService(MS_DBUS_NAME)) {
+    if(!QDBusConnection::sessionBus().registerService(argc == 1 ? MS_DBUS_NAME : argv[1])) {
         printf("Service name already taken.\n");
         return 1;
     }

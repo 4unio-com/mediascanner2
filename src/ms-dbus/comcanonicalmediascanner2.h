@@ -8,8 +8,8 @@
  * Do not edit! All changes made to it will be lost.
  */
 
-#ifndef COMCANONICALMEDIASCANNER2_H_1416559436
-#define COMCANONICALMEDIASCANNER2_H_1416559436
+#ifndef COMCANONICALMEDIASCANNER2_H_1416571766
+#define COMCANONICALMEDIASCANNER2_H_1416571766
 
 #include"qtservice.h"
 
@@ -126,4 +126,3 @@ Q_SIGNALS: // SIGNALS
 };
 
 #endif
-

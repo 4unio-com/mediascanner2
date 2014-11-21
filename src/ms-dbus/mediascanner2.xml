@@ -22,7 +22,7 @@
       <annotation name="org.qtproject.QtDBus.QtTypeName.In2" value="QVariantMap"/>
     </method>
     <method name="queryAlbums">
-      <arg type="a(ss)" direction="out"/>
+      <arg type="a(sssss)" direction="out"/>
       <annotation name="org.qtproject.QtDBus.QtTypeName.Out0" value="QList&lt;AlbumWire&gt;"/>
       <arg name="core_term" type="s" direction="in"/>
       <arg name="filter" type="a{sv}" direction="in"/>
@@ -37,7 +37,7 @@
     <method name="getAlbumSongs">
       <arg type="a(sssssssssiiiiiddi)" direction="out"/>
       <annotation name="org.qtproject.QtDBus.QtTypeName.Out0" value="QList&lt;MediaFileWire&gt;"/>
-      <arg name="album" type="(ss)" direction="in"/>
+      <arg name="album" type="(sssss)" direction="in"/>
       <annotation name="org.qtproject.QtDBus.QtTypeName.In0" value="AlbumWire"/>
     </method>
     <method name="getETag">
@@ -51,7 +51,7 @@
       <annotation name="org.qtproject.QtDBus.QtTypeName.In0" value="QVariantMap"/>
     </method>
     <method name="listAlbums">
-      <arg type="a(ss)" direction="out"/>
+      <arg type="a(sssss)" direction="out"/>
       <annotation name="org.qtproject.QtDBus.QtTypeName.Out0" value="QList&lt;AlbumWire&gt;"/>
       <arg name="filter" type="a{sv}" direction="in"/>
       <annotation name="org.qtproject.QtDBus.QtTypeName.In0" value="QVariantMap"/>
@@ -107,4 +107,3 @@
     </method>
   </interface>
 </node>
-

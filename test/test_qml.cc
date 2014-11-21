@@ -161,4 +161,4 @@ private:
 MediaStoreData data;
 
 
-QUICK_TEST_MAIN(Mediascaner)
+QUICK_TEST_MAIN(Mediascanner)

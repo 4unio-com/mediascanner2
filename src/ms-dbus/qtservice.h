@@ -59,6 +59,9 @@ struct MediaFileWire {
 struct AlbumWire {
     QString title;
     QString artist;
+    QString date;
+    QString genre;
+    QString artfile;
 
     AlbumWire(){};
     explicit AlbumWire(const mediascanner::Album &a);
