@@ -34,6 +34,10 @@ MediaFile::MediaFile(const MediaFile &other) :
     p(new MediaFilePrivate(*other.p)) {
 }
 
+MediaFile::MediaFile(MediaFile &&other) : p(nullptr) {
+    *this = std::move(other);
+}
+
 MediaFile::MediaFile(const MediaFileBuilder &builder) {
     if(!builder.p) {
         throw logic_error("Tried to construct a Mediafile with an empty MediaFileBuilder.");
@@ -57,6 +61,15 @@ MediaFile::~MediaFile() {
 
 MediaFile &MediaFile::operator=(const MediaFile &other) {
     *p = *other.p;
+    return *this;
+}
+
+MediaFile &MediaFile::operator=(MediaFile &&other) {
+    if (this != &other) {
+        delete p;
+        p = other.p;
+        other.p = nullptr;
+    }
     return *this;
 }
 
@@ -124,12 +137,29 @@ double MediaFile::getLongitude() const noexcept {
     return p->longitude;
 }
 
+bool MediaFile::getHasThumbnail() const noexcept {
+    return p->has_thumbnail;
+}
+
 MediaType MediaFile::getType() const noexcept {
     return p->type;
 }
 
 std::string MediaFile::getUri() const {
     return mediascanner::getUri(p->filename);
+}
+
+std::string MediaFile::getArtUri() const {
+    switch (p->type) {
+    case AudioMedia:
+        if (p->has_thumbnail) {
+            return make_thumbnail_uri(getUri());
+        } else {
+            return make_album_art_uri(getAuthor(), getAlbum());
+        }
+    default:
+        return make_thumbnail_uri(getUri());
+    }
 }
 
 bool MediaFile::operator==(const MediaFile &other) const {

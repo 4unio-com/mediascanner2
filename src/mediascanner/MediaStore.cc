@@ -46,7 +46,7 @@ namespace mediascanner {
 
 // Increment this whenever changing db schema.
 // It will cause dbstore to rebuild its tables.
-static const int schemaVersion = 7;
+static const int schemaVersion = 8;
 
 struct MediaStorePrivate {
     sqlite3 *db;
@@ -143,6 +143,81 @@ wrong_number_args:
     sqlite3_result_error(pCtx, "wrong number of arguments to function rank()", -1);
 }
 
+struct FirstContext {
+    int type;
+    union {
+        int i;
+        double f;
+        struct {
+            void *blob;
+            int length;
+        } b;
+    } data;
+};
+
+static void first_step(sqlite3_context *ctx, int /*argc*/, sqlite3_value **argv) {
+    FirstContext *d = static_cast<FirstContext*>(sqlite3_aggregate_context(ctx, sizeof(FirstContext*)));
+    if (d->type != 0) {
+        return;
+    }
+    sqlite3_value *arg = argv[0];
+    d->type = sqlite3_value_type(arg);
+    switch (d->type) {
+    case SQLITE_INTEGER:
+        d->data.i = sqlite3_value_int(arg);
+        break;
+    case SQLITE_FLOAT:
+        d->data.f = sqlite3_value_double(arg);
+        break;
+    case SQLITE_NULL:
+        break;
+    case SQLITE_TEXT:
+        d->data.b.length = sqlite3_value_bytes(arg);
+        d->data.b.blob = malloc(d->data.b.length);
+        memcpy(d->data.b.blob, sqlite3_value_text(arg), d->data.b.length);
+        break;
+    case SQLITE_BLOB:
+        d->data.b.length = sqlite3_value_bytes(arg);
+        d->data.b.blob = malloc(d->data.b.length);
+        memcpy(d->data.b.blob, sqlite3_value_blob(arg), d->data.b.length);
+        break;
+    default:
+        sqlite3_result_error(ctx, "Unhandled data type", -1);
+        sqlite3_result_error_code(ctx, SQLITE_MISMATCH);
+    }
+}
+
+static void first_finalize(sqlite3_context *ctx) {
+    FirstContext *d = static_cast<FirstContext*>(sqlite3_aggregate_context(ctx, 0));
+    if (d == nullptr) {
+        sqlite3_result_null(ctx);
+        return;
+    }
+    switch (d->type) {
+    case SQLITE_INTEGER:
+        sqlite3_result_int(ctx, d->data.i);
+        break;
+    case SQLITE_FLOAT:
+        sqlite3_result_double(ctx, d->data.f);
+        break;
+    case SQLITE_NULL:
+        sqlite3_result_null(ctx);
+        break;
+    case SQLITE_TEXT:
+        sqlite3_result_text(ctx, reinterpret_cast<char*>(d->data.b.blob),
+                            d->data.b.length, free);
+        d->data.b.blob = nullptr;
+        break;
+    case SQLITE_BLOB:
+        sqlite3_result_blob(ctx, d->data.b.blob, d->data.b.length, free);
+        d->data.b.blob = nullptr;
+        break;
+    default:
+        sqlite3_result_error(ctx, "Unhandled data type", -1);
+        sqlite3_result_error_code(ctx, SQLITE_MISMATCH);
+    }
+}
+
 static bool has_block_in_path(std::map<std::string, bool> &cache, const std::string &filename) {
     std::vector<std::string> path_segments;
     std::istringstream f(filename);
@@ -153,10 +228,12 @@ static bool has_block_in_path(std::map<std::string, bool> &cache, const std::str
     path_segments.pop_back();
     std::string trial_path;
     for(const auto &seg : path_segments) {
-        trial_path += "/" + seg;
+        if(trial_path != "/")
+            trial_path += "/";
+        trial_path += seg;
         auto r = cache.find(trial_path);
-        if(r != cache.end()) {
-            return r->second;
+        if(r != cache.end() && r->second) {
+            return true;
         }
         if(has_scanblock(trial_path)) {
             cache[trial_path] = true;
@@ -171,6 +248,11 @@ static bool has_block_in_path(std::map<std::string, bool> &cache, const std::str
 static void register_functions(sqlite3 *db) {
     if (sqlite3_create_function(db, "rank", -1, SQLITE_ANY, nullptr,
                                 rankfunc, nullptr, nullptr) != SQLITE_OK) {
+        throw runtime_error(sqlite3_errmsg(db));
+    }
+
+    if (sqlite3_create_function(db, "first", 1, SQLITE_ANY, nullptr,
+                                nullptr, first_step, first_finalize) != SQLITE_OK) {
         throw runtime_error(sqlite3_errmsg(db));
     }
 }
@@ -226,6 +308,7 @@ CREATE TABLE media (
     height INTEGER,       -- Only relevant to video/images
     latitude DOUBLE,
     longitude DOUBLE,
+    has_thumbnail INTEGER CHECK (has_thumbnail IN (0, 1)),
     type INTEGER CHECK (type IN (1, 2, 3)) -- MediaType enum
 );
 
@@ -251,6 +334,7 @@ CREATE TABLE media_attic (
     height INTEGER,       -- Only relevant to video/images
     latitude DOUBLE,
     longitude DOUBLE,
+    has_thumbnail INTEGER,
     type INTEGER   -- 0=Audio, 1=Video
 );
 
@@ -343,7 +427,7 @@ size_t MediaStorePrivate::size() const {
 }
 
 void MediaStorePrivate::insert(const MediaFile &m) const {
-    Statement query(db, "INSERT OR REPLACE INTO media (filename, content_type, etag, title, date, artist, album, album_artist, genre, disc_number, track_number, duration, width, height, latitude, longitude, type)  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+    Statement query(db, "INSERT OR REPLACE INTO media (filename, content_type, etag, title, date, artist, album, album_artist, genre, disc_number, track_number, duration, width, height, latitude, longitude, has_thumbnail, type)  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
     query.bind(1, m.getFileName());
     query.bind(2, m.getContentType());
     query.bind(3, m.getETag());
@@ -360,15 +444,21 @@ void MediaStorePrivate::insert(const MediaFile &m) const {
     query.bind(14, m.getHeight());
     query.bind(15, m.getLatitude());
     query.bind(16, m.getLongitude());
-    query.bind(17, (int)m.getType());
+    query.bind(17, (int)m.getHasThumbnail());
+    query.bind(18, (int)m.getType());
     query.step();
 
     const char *typestr = m.getType() == AudioMedia ? "song" : "video";
     printf("Added %s to backing store: %s\n", typestr, m.getFileName().c_str());
-    printf(" author   : '%s'\n", m.getAuthor().c_str());
+    printf(" author   : %s\n", m.getAuthor().c_str());
     printf(" title    : %s\n", m.getTitle().c_str());
-    printf(" album    : '%s'\n", m.getAlbum().c_str());
+    printf(" album    : %s\n", m.getAlbum().c_str());
     printf(" duration : %d\n", m.getDuration());
+
+    // Not atomic with the addition above but very unlikely to crash between the two.
+    // Even if it does, only one residual line remains and that will be cleaned up
+    // on the next scan.
+    remove_broken_file(m.getFileName());
 }
 
 void MediaStorePrivate::remove(const string &fname) const {
@@ -414,7 +504,8 @@ static MediaFile make_media(Statement &query) {
         .setHeight(query.getInt(13))
         .setLatitude(query.getDouble(14))
         .setLongitude(query.getDouble(15))
-        .setType((MediaType)query.getInt(16));
+        .setHasThumbnail(query.getInt(16))
+        .setType((MediaType)query.getInt(17));
 }
 
 static vector<MediaFile> collect_media(Statement &query) {
@@ -427,7 +518,7 @@ static vector<MediaFile> collect_media(Statement &query) {
 
 MediaFile MediaStorePrivate::lookup(const std::string &filename) const {
     Statement query(db, R"(
-SELECT filename, content_type, etag, title, date, artist, album, album_artist, genre, disc_number, track_number, duration, width, height, latitude, longitude, type
+SELECT filename, content_type, etag, title, date, artist, album, album_artist, genre, disc_number, track_number, duration, width, height, latitude, longitude, has_thumbnail, type
   FROM media
   WHERE filename = ?
 )");
@@ -440,7 +531,7 @@ SELECT filename, content_type, etag, title, date, artist, album, album_artist, g
 
 vector<MediaFile> MediaStorePrivate::query(const std::string &core_term, MediaType type, const Filter &filter) const {
     string qs(R"(
-SELECT filename, content_type, etag, title, date, artist, album, album_artist, genre, disc_number, track_number, duration, width, height, latitude, longitude, type
+SELECT filename, content_type, etag, title, date, artist, album, album_artist, genre, disc_number, track_number, duration, width, height, latitude, longitude, has_thumbnail, type
   FROM media
 )");
     if (!core_term.empty()) {
@@ -492,7 +583,11 @@ SELECT filename, content_type, etag, title, date, artist, album, album_artist, g
 static Album make_album(Statement &query) {
     const string album = query.getText(0);
     const string album_artist = query.getText(1);
-    return Album(album, album_artist);
+    const string date = query.getText(2);
+    const string genre = query.getText(3);
+    const string filename = query.getText(4);
+    const bool has_thumbnail = query.getInt(5);
+    return Album(album, album_artist, date, genre, has_thumbnail ? filename : "");
 }
 
 static vector<Album> collect_albums(Statement &query) {
@@ -505,7 +600,7 @@ static vector<Album> collect_albums(Statement &query) {
 
 vector<Album> MediaStorePrivate::queryAlbums(const std::string &core_term, const Filter &filter) const {
     string qs(R"(
-SELECT album, album_artist FROM media
+SELECT album, album_artist, first(date) as date, first(genre) as genre, first(filename) as filename, first(has_thumbnail) as has_thumbnail FROM media
 WHERE type = ? AND album <> ''
 )");
     if (!core_term.empty()) {
@@ -603,7 +698,7 @@ SELECT etag FROM media WHERE filename = ?
 
 std::vector<MediaFile> MediaStorePrivate::listSongs(const Filter &filter) const {
     std::string qs(R"(
-SELECT filename, content_type, etag, title, date, artist, album, album_artist, genre, disc_number, track_number, duration, width, height, latitude, longitude, type
+SELECT filename, content_type, etag, title, date, artist, album, album_artist, genre, disc_number, track_number, duration, width, height, latitude, longitude, has_thumbnail, type
   FROM media
   WHERE type = ?
 )");
@@ -646,7 +741,7 @@ LIMIT ? OFFSET ?
 
 std::vector<Album> MediaStorePrivate::listAlbums(const Filter &filter) const {
     std::string qs(R"(
-SELECT album, album_artist FROM media
+SELECT album, album_artist, first(date) as date, first(genre) as genre, first(filename) as filename, first(has_thumbnail) as has_thumbnail FROM media
   WHERE type = ?
 )");
     if (filter.hasArtist()) {
@@ -771,7 +866,7 @@ void MediaStorePrivate::pruneDeleted() {
         }
     }
     query.finalize();
-    printf("%d files deleted from disk.\n", (int)deleted.size());
+    printf("%d files deleted from disk or in scanblocked directories.\n", (int)deleted.size());
     for(const auto &i : deleted) {
         remove(i);
     }

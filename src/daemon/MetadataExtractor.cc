@@ -123,6 +123,10 @@ extract_tag_info (const GstTagList * list, const gchar * tag, gpointer user_data
     int i, num;
     string tagname(tag);
 
+    if(tagname == GST_TAG_IMAGE) {
+        mfb->setHasThumbnail(true);
+        return;
+    }
     num = gst_tag_list_get_tag_size (list, tag);
     for (i = 0; i < num; ++i) {
         const GValue *val;
@@ -389,6 +393,10 @@ MediaFile MetadataExtractor::extract(const DetectedFile &d) {
     }
 
     return mfb;
+}
+
+MediaFile MetadataExtractor::fallback_extract(const DetectedFile &d) {
+    return MediaFileBuilder(d.filename).setType(d.type);
 }
 
 }

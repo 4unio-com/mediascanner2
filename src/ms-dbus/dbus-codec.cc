@@ -57,6 +57,7 @@ void Codec<MediaFile>::encode_argument(Message::Writer &out, const MediaFile &fi
     core::dbus::encode_argument(w, (int32_t)file.getHeight());
     core::dbus::encode_argument(w, file.getLatitude());
     core::dbus::encode_argument(w, file.getLongitude());
+    core::dbus::encode_argument(w, file.getHasThumbnail());
     core::dbus::encode_argument(w, (int32_t)file.getType());
     out.close_structure(std::move(w));
 }
@@ -67,10 +68,11 @@ void Codec<MediaFile>::decode_argument(Message::Reader &in, MediaFile &file) {
     string album, album_artist, date, genre;
     int32_t disc_number, track_number, duration, width, height, type;
     double latitude, longitude;
+    bool has_thumbnail;
     r >> filename >> content_type >> etag >> title >> author
       >> album >> album_artist >> date >> genre
       >> disc_number >> track_number >> duration
-      >> width >> height >> latitude >> longitude >> type;
+      >> width >> height >> latitude >> longitude >> has_thumbnail >> type;
     file = MediaFileBuilder(filename)
         .setContentType(content_type)
         .setETag(etag)
@@ -87,6 +89,7 @@ void Codec<MediaFile>::decode_argument(Message::Reader &in, MediaFile &file) {
         .setHeight(height)
         .setLatitude(latitude)
         .setLongitude(longitude)
+        .setHasThumbnail(has_thumbnail)
         .setType((MediaType)type);
 }
 
@@ -94,14 +97,17 @@ void Codec<Album>::encode_argument(Message::Writer &out, const Album &album) {
     auto w = out.open_structure();
     core::dbus::encode_argument(w, album.getTitle());
     core::dbus::encode_argument(w, album.getArtist());
+    core::dbus::encode_argument(w, album.getDate());
+    core::dbus::encode_argument(w, album.getGenre());
+    core::dbus::encode_argument(w, album.getArtFile());
     out.close_structure(std::move(w));
 }
 
 void Codec<Album>::decode_argument(Message::Reader &in, Album &album) {
     auto r = in.pop_structure();
-    string title, artist;
-    r >> title >> artist;
-    album = Album(title, artist);
+    string title, artist, date, genre, art_file;
+    r >> title >> artist >> date >> genre >> art_file;
+    album = Album(title, artist, date, genre, art_file);
 }
 
 void Codec<Filter>::encode_argument(Message::Writer &out, const Filter &filter) {

@@ -135,6 +135,8 @@ void SubtreeWatcher::addDir(const string &root) {
         lstat(fullpath.c_str(), &statbuf);
         if(S_ISDIR(statbuf.st_mode)) {
             addDir(fullpath);
+        } else if (S_ISREG(statbuf.st_mode)) {
+            fileAdded(fullpath);
         }
     }
 }
@@ -158,16 +160,15 @@ void SubtreeWatcher::fileAdded(const string &abspath) {
     try {
         DetectedFile d = p->extractor.detect(abspath);
         if(p->store.is_broken_file(abspath, d.etag)) {
-            fprintf(stderr, "Skipping unscannable file %s.\n", abspath.c_str());
-            return;
-        }
-        // Only extract and insert the file if the ETag has changed.
-        if (d.etag != p->store.getETag(d.filename)) {
+            fprintf(stderr, "Using fallback data for unscannable file %s.\n", abspath.c_str());
+            p->store.insert(p->extractor.fallback_extract(d));
+        } else if (d.etag != p->store.getETag(d.filename)) {
+            // Only extract and insert the file if the ETag has changed.
             p->store.insert_broken_file(abspath, d.etag);
-            p->store.insert(p->extractor.extract(d));
             // If detection dies, insertion into broken files persists
             // and the next time this file is encountered, it is skipped.
-            p->store.remove_broken_file(abspath);
+            // Insert cleans broken status of the file.
+            p->store.insert(p->extractor.extract(d));
         }
     } catch(const exception &e) {
         fprintf(stderr, "Error when adding new file: %s\n", e.what());

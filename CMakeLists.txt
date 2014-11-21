@@ -1,9 +1,9 @@
 project(mediascanner2 CXX C)
 cmake_minimum_required(VERSION 2.8.9)
 
-set(MEDIASCANNER_VERSION "0.104")
-set(MEDIASCANNER_SOVERSION 2)
-set(MEDIASCANNER_LIBVERSION 2.0.0)
+set(MEDIASCANNER_VERSION "0.105")
+set(MEDIASCANNER_SOVERSION 3)
+set(MEDIASCANNER_LIBVERSION 3.0.0)
 
 if(PROJECT_BINARY_DIR STREQUAL PROJECT_SOURCE_DIR)
   message(FATAL_ERROR "In-tree build attempt detected, aborting. Set your build dir outside your source dir, delete CMakeCache.txt from source root and try again.")
@@ -21,6 +21,7 @@ pkg_check_modules(GLIB glib-2.0 REQUIRED)
 pkg_check_modules(EXIF libexif REQUIRED)
 pkg_check_modules(DBUSCPP dbus-cpp REQUIRED)
 pkg_check_modules(APPARMOR libapparmor REQUIRED)
+pkg_check_modules(UDISKS udisks2 REQUIRED)
 find_package(Threads REQUIRED)
 find_package(Qt5Core REQUIRED)
 

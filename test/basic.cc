@@ -148,15 +148,19 @@ void scanFiles(MediaStore &store, const string &subdir, const MediaType type) {
     try {
         while(true) {
             auto d  = s.next();
-            // If the file is unchanged or known bad, skip it.
-            if (store.is_broken_file(d.filename, d.etag) ||
-                    d.etag == store.getETag(d.filename))
+            // If the file is unchanged or known bad, do fallback.
+            if (store.is_broken_file(d.filename, d.etag)) {
+                fprintf(stderr, "Using fallback data for unscannable file %s.\n", d.filename.c_str());
+                store.insert(extractor.fallback_extract(d));
                 continue;
+            }
+            if(d.etag == store.getETag(d.filename)) {
+                continue;
+            }
             store.insert_broken_file(d.filename, d.etag);
             store.insert(extractor.extract(d));
-            // If the above line crashes, then brokenness
+            // If the above line crashes, then brokenness of this file
             // persists.
-            store.remove_broken_file(d.filename);
         }
     } catch(const StopIteration &e) {
     }
@@ -224,6 +228,31 @@ TEST(Mediascanner, root_skip) {
     Scanner s(&e, root, AudioMedia);
     s.next();
     ASSERT_THROW(s.next(), StopIteration);
+}
+
+TEST(Mediascanner, scan_files_found_in_new_dir) {
+    string testdir = TEST_DIR "/testdir";
+    string subdir = testdir + "/subdir";
+    string testfile = SOURCE_DIR "/media/testfile.ogg";
+    string outfile = subdir + "/testfile.ogg";
+    clear_dir(testdir);
+    ASSERT_GE(mkdir(testdir.c_str(), S_IRUSR | S_IWUSR | S_IXUSR), 0);
+
+    MediaStore store(":memory:", MS_READ_WRITE);
+    MetadataExtractor extractor;
+    InvalidationSender invalidator;
+    SubtreeWatcher watcher(store, extractor, invalidator);
+    watcher.addDir(testdir);
+    ASSERT_EQ(watcher.directoryCount(), 1);
+    ASSERT_EQ(store.size(), 0);
+
+    // Create a new directory and a file inside that directory before
+    // the watcher has a chance to set up an inotify watch.
+    ASSERT_GE(mkdir(subdir.c_str(), S_IRUSR | S_IWUSR | S_IXUSR), 0);
+    copy_file(testfile, outfile);
+    iterate_main_loop();
+    ASSERT_EQ(watcher.directoryCount(), 2);
+    ASSERT_EQ(store.size(), 1);
 }
 
 int main(int argc, char **argv) {

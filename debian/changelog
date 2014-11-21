@@ -1,3 +1,62 @@
+mediascanner2 (0.105+15.04.20141030.1-0ubuntu1) vivid; urgency=low
+
+  [ James Henstridge ]
+  * When a new directory is added and a new inotify watch is set up,
+    call fileAdded() on any regular files already in the directory so
+    they are not missed. (LP: #1379817)
+
+ -- Ubuntu daily release <ps-jenkins@lists.canonical.com>  Thu, 30 Oct 2014 11:23:12 +0000
+
+mediascanner2 (0.105+14.10.20141001-0ubuntu1) utopic; urgency=low
+
+  [ James Henstridge ]
+  * Use udisksd to track mounts and unmounts of removable media. (LP:
+    #1358750)
+
+ -- Ubuntu daily release <ps-jenkins@lists.canonical.com>  Wed, 01 Oct 2014 06:59:45 +0000
+
+mediascanner2 (0.105+14.10.20140925.1-0ubuntu1) utopic; urgency=low
+
+  [ Jussi Pakkanen ]
+  * Print banner when starting the daemon so upstart logs are easier to
+    parse.
+  * Use fallback data for crasher files so they at least show up in
+    scope queries.
+
+ -- Ubuntu daily release <ps-jenkins@lists.canonical.com>  Thu, 25 Sep 2014 11:58:02 +0000
+
+mediascanner2 (0.105+14.10.20140909-0ubuntu1) utopic; urgency=low
+
+  [ Jussi Pakkanen ]
+  * Print a log message when skipping a broken file.
+
+  [ Jamie Strandboge ]
+  * debian/usr.bin.mediascanner-service-2.0: add video abstraction.
+    silence access to /run/udev/data/** like we do elsewhere. allow read
+    on /dev/video*. allow read on /sys/devices/**/video4linux/**/uevent
+    .
+
+ -- Ubuntu daily release <ps-jenkins@lists.canonical.com>  Tue, 09 Sep 2014 08:41:03 +0000
+
+mediascanner2 (0.105+14.10.20140903-0ubuntu1) utopic; urgency=medium
+
+  [ James Henstridge ]
+  * Record whether files contain embedded artwork in the media index.
+  * Use this info to generate art URIs that either use embedded artwork,
+    or the network based albumart provider.
+  * Expose embedded album art for Album objects too. Bump soname to
+    account for Album class changing size.
+
+  [ Ubuntu daily release ]
+  * debian/libmediascanner-2.0-3.symbols: auto-update to released
+    version
+  * New rebuild forced
+
+  [ Jussi Pakkanen ]
+  * Fix usage of blocking cache.
+
+ -- Ubuntu daily release <ps-jenkins@lists.canonical.com>  Wed, 03 Sep 2014 11:46:24 +0000
+
 mediascanner2 (0.104+14.10.20140825-0ubuntu1) utopic; urgency=medium
 
   [ James Henstridge ]
