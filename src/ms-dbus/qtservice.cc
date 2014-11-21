@@ -150,6 +150,10 @@ mediascanner::Filter vmap2filter(const QVariantMap &filter) {
     if(a != filter.end()) {
         f.setAlbumArtist(a->value<QString>().toStdString());
     }
+    a = filter.find("album");
+    if(a != filter.end()) {
+        f.setAlbum(a->value<QString>().toStdString());
+    }
     a = filter.find("genre");
     if(a != filter.end()) {
         f.setGenre(a->value<QString>().toStdString());
@@ -180,6 +184,9 @@ QVariantMap filter2vmap(const mediascanner::Filter &filter) {
     }
     if(filter.hasAlbumArtist()) {
         f["album_artist"] = QString(filter.getAlbumArtist().c_str());
+    }
+    if(filter.hasAlbum()) {
+        f["album"] = QString(filter.getAlbum().c_str());
     }
     if(filter.hasGenre()) {
         f["genre"] = QString(filter.getGenre().c_str());
