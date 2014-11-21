@@ -43,7 +43,7 @@ public:
         }
 
         if (system("rm -rf \"$MEDIASCANNER_CACHEDIR\"") == -1) {
-            throw std::runtime_error("rm -rf failed");
+            fprintf(stderr, "rm -rf failed, continuing anyway.\n");
         }
     }
 
