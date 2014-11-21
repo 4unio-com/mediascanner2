@@ -6,8 +6,6 @@
 #include <QProcess>
 #include <QtQuickTest/quicktest.h>
 
-#include <core/dbus/fixture.h>
-
 #include <mediascanner/MediaStore.hh>
 #include <mediascanner/MediaFile.hh>
 #include <mediascanner/MediaFileBuilder.hh>
@@ -28,7 +26,7 @@ public:
         populate();
 
 
-        daemon.setProgram(TEST_DIR "/../src/ms-dbus/ms-dbus-test");
+        daemon.setProgram(TEST_DIR "/../src/ms-dbus/mediascanner-dbus-2.0");
         daemon.setProcessChannelMode(QProcess::ForwardedChannels);
         daemon.start();
         daemon.closeWriteChannel();

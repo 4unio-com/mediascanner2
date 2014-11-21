@@ -1,8 +1,8 @@
 /*
- * Copyright (C) 2013 Canonical, Ltd.
+ * Copyright (C) 2014 Canonical, Ltd.
  *
  * Authors:
- *    James Henstridge <james.henstridge@canonical.com>
+ *    Jussi Pakkanen <jussi.pakkanen@canonical.com>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License version 3 as
@@ -17,22 +17,31 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <memory>
-#include <core/dbus/bus.h>
-#include <core/dbus/asio/executor.h>
-
-#include <mediascanner/MediaStore.hh>
-#include "service-skeleton.hh"
+#include"qtservice.h"
+#include<QCoreApplication>
+#include<QDBusConnection>
 
 using namespace mediascanner;
 
-int main(int , char **) {
-    auto bus = std::make_shared<core::dbus::Bus>(core::dbus::WellKnownBus::session);
-    bus->install_executor(core::dbus::asio::make_executor(bus));
+int main(int argc, char **argv) {
+    QCoreApplication app(argc, argv);
+    const char *busname = getenv("MEDIASCANNER_DBUS_NAME");
 
-    auto store = std::make_shared<MediaStore>(MS_READ_ONLY);
-
-    dbus::ServiceSkeleton service(bus, store);
-    service.run();
+    if(argc > 1) {
+        busname = argv[1];
+    }
+    if(!busname) {
+        busname = MS_DBUS_NAME;
+    }
+    QtService *s = new QtService(&app);
+    if(!QDBusConnection::sessionBus().registerService(busname)) {
+        printf("Service name already taken.\n");
+        return 1;
+    }
+    if(!QDBusConnection::sessionBus().registerObject(MS_DBUS_OBJECT, &app)) {
+        printf("Could not register to DBus session.\n");
+        return 1;
+    }
+    app.exec();
     return 0;
 }
