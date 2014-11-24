@@ -5,6 +5,7 @@
 
 #include <QProcess>
 #include <QtQuickTest/quicktest.h>
+#include <QDir>
 
 #include <mediascanner/MediaStore.hh>
 #include <mediascanner/MediaFile.hh>
@@ -39,8 +40,9 @@ public:
             fprintf(stderr, "Failed to stop mediascanner-dbus-2.0\n");
         }
 
-        if (system("rm -rf \"$MEDIASCANNER_CACHEDIR\"") == -1) {
-            fprintf(stderr, "rm -rf failed, continuing anyway.\n");
+        QDir dir(db_path.c_str());
+        if (!dir.removeRecursively()) {
+            fprintf(stderr, "Deleting cache dir failed, continuing anyway.\n");
         }
     }
 
