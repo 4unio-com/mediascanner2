@@ -35,7 +35,7 @@ int main(int argc, char **argv) {
     }
     QtService *s = new QtService(&app);
     if(!QDBusConnection::sessionBus().registerService(busname)) {
-        printf("Service name already taken.\n");
+        printf("DBus service name %s already taken.\n", busname);
         return 1;
     }
     if(!QDBusConnection::sessionBus().registerObject(MS_DBUS_OBJECT, &app)) {

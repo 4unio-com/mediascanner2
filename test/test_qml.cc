@@ -22,7 +22,6 @@ public:
             throw std::runtime_error("Could not create temporary directory");
         }
         setenv("MEDIASCANNER_CACHEDIR", db_path.c_str(), true);
-        setenv("MEDIASCANNER_DBUS_NAME", "com.canonical.mediascanner2qmltest", true);
         populate();
 
 
