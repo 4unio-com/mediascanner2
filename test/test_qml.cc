@@ -25,6 +25,18 @@ public:
         setenv("MEDIASCANNER_CACHEDIR", db_path.c_str(), true);
         populate();
 
+        QStringList args;
+        args << "--session" << "--print-address";
+        dbus.start("/bin/dbus-daemon", args, QIODevice::ReadOnly);
+        if(!dbus.waitForStarted()) {
+            throw std::runtime_error("Failed to start dbus-daemon.");
+        }
+        dbus.setReadChannel(QProcess::StandardOutput);
+        dbus.waitForReadyRead();
+
+        QByteArray bus_address = dbus.readLine();
+        bus_address[bus_address.length()-1] = '\0'; // Chop off \n.
+        setenv("DBUS_SESSION_BUS_ADDRESS", bus_address.data(), true);
 
         daemon.setProgram(TEST_DIR "/../src/ms-dbus/mediascanner-dbus-2.0");
         daemon.setProcessChannelMode(QProcess::ForwardedChannels);
@@ -35,6 +47,10 @@ public:
         }
     }
     ~MediaStoreData() {
+        dbus.kill();
+        if (!dbus.waitForFinished()) {
+            fprintf(stderr, "Failed to stop dbus-daemon.\n");
+        }
         daemon.kill();
         if (!daemon.waitForFinished()) {
             fprintf(stderr, "Failed to stop mediascanner-dbus-2.0\n");
@@ -148,6 +164,7 @@ public:
 private:
     std::string db_path;
     QProcess daemon;
+    QProcess dbus;
 };
 
 MediaStoreData data;

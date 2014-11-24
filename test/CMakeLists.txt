@@ -53,7 +53,7 @@ set_tests_properties(test_qml PROPERTIES
 
 add_test(test_qml_dbus test_qml -input ${CMAKE_CURRENT_SOURCE_DIR}/qml -import ${CMAKE_BINARY_DIR}/src/qml)
 set_tests_properties(test_qml_dbus PROPERTIES
-  ENVIRONMENT "QT_QPA_PLATFORM=minimal;MEDIASCANNER_USE_DBUS=1;MEDIASCANNER_DBUS_NAME=com.canonical.mediascanner2qmltest"
+  ENVIRONMENT "QT_QPA_PLATFORM=minimal;MEDIASCANNER_USE_DBUS=1"
   TIMEOUT 600)
 
 

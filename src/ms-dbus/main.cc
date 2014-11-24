@@ -26,6 +26,7 @@ using namespace mediascanner;
 int main(int argc, char **argv) {
     QCoreApplication app(argc, argv);
     const char *busname = getenv("MEDIASCANNER_DBUS_NAME");
+    new QtService(&app);
 
     if(argc > 1) {
         busname = argv[1];
@@ -33,15 +34,17 @@ int main(int argc, char **argv) {
     if(!busname) {
         busname = MS_DBUS_NAME;
     }
-    QtService *s = new QtService(&app);
     if(!QDBusConnection::sessionBus().registerService(busname)) {
         printf("DBus service name %s already taken.\n", busname);
         return 1;
     }
     if(!QDBusConnection::sessionBus().registerObject(MS_DBUS_OBJECT, &app)) {
-        printf("Could not register to DBus session.\n");
+        QDBusConnection::sessionBus().unregisterService(busname);
+        printf("Could not register object %s to DBus session.\n", MS_DBUS_OBJECT);
         return 1;
     }
     app.exec();
+    QDBusConnection::sessionBus().unregisterService(busname);
+    QDBusConnection::sessionBus().unregisterObject(MS_DBUS_OBJECT, QDBusConnection::UnregisterTree);
     return 0;
 }
