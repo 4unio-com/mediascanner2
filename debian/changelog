@@ -1,6 +1,9 @@
 mediascanner2 (0.105+15.04.20150127.1-0ubuntu1) UNRELEASED; urgency=medium
 
-  * Cherry pick fixes from trunk. (LP: #1414566)
+  * Use wal mode of sqlite to make concurrent read and write
+    work (LP: #1414566)
+  * Use creation date as timestamp on pictures that do not have
+    exif data.
   * New build-dependency on gdkpixbuf.
 
  -- Jussi Pakkanen <jussi.pakkanen@ubuntu.com>  Tue, 27 Jan 2015 17:09:24 +0200
