@@ -1,3 +1,10 @@
+mediascanner2 (0.105+15.04.20150127.1-0ubuntu1) UNRELEASED; urgency=medium
+
+  * Cherry pick fixes from trunk. (LP: #1414566)
+  * New build-dependency on gdkpixbuf.
+
+ -- Jussi Pakkanen <jussi.pakkanen@ubuntu.com>  Tue, 27 Jan 2015 17:09:24 +0200
+
 mediascanner2 (0.105+15.04.20141030.1-0ubuntu1) vivid; urgency=low
 
   [ James Henstridge ]
