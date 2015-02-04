@@ -410,7 +410,11 @@ MediaStore::MediaStore(const std::string &filename, OpenType access, const std::
             archiveItems(retireprefix);
     } else {
         if(detectedSchemaVersion != schemaVersion) {
-            throw runtime_error("Tried to open a db with an unsupported schema version.");
+            std::string msg("Tried to open a db with schema version ");
+            msg += std::to_string(detectedSchemaVersion);
+            msg += ", while supported version is ";
+            msg += std::to_string(schemaVersion) + ".";
+            throw runtime_error(msg);
         }
     }
 }
