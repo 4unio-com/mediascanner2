@@ -1,11 +1,12 @@
-mediascanner2 (0.105+15.04.20150127.1-0ubuntu1) UNRELEASED; urgency=medium
+mediascanner2 (0.105+15.04.20150204~rtm-0ubuntu1) 14.09; urgency=medium
 
+  [ Jussi Pakkanen ]
   * Retry sqlite queries that are busy. (LP: #1414566)
   * Use creation date as timestamp on pictures that do not have
     exif data.
   * New build-dependency on gdkpixbuf.
 
- -- Jussi Pakkanen <jussi.pakkanen@ubuntu.com>  Tue, 27 Jan 2015 17:09:24 +0200
+ -- Ubuntu daily release <ps-jenkins@lists.canonical.com>  Wed, 04 Feb 2015 15:15:32 +0000
 
 mediascanner2 (0.105+15.04.20141030.1~rtm-0ubuntu1) 14.09; urgency=low
 
