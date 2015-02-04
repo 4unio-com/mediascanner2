@@ -7,7 +7,7 @@ mediascanner2 (0.105+15.04.20150127.1-0ubuntu1) UNRELEASED; urgency=medium
 
  -- Jussi Pakkanen <jussi.pakkanen@ubuntu.com>  Tue, 27 Jan 2015 17:09:24 +0200
 
-mediascanner2 (0.105+15.04.20141030.1-0ubuntu1) vivid; urgency=low
+mediascanner2 (0.105+15.04.20141030.1~rtm-0ubuntu1) 14.09; urgency=low
 
   [ James Henstridge ]
   * When a new directory is added and a new inotify watch is set up,
