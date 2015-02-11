@@ -40,6 +40,7 @@ namespace dbus {
 class ServiceStub : public core::dbus::Stub<MediaStoreService>, public virtual MediaStoreBase {
 public:
     explicit ServiceStub(core::dbus::Bus::Ptr bus);
+    explicit ServiceStub();
     virtual ~ServiceStub();
 
     virtual MediaFile lookup(const std::string &filename) const override;

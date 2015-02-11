@@ -24,7 +24,7 @@
 #include <core/dbus/bus.h>
 #include <core/dbus/skeleton.h>
 
-#include "service.hh"
+#include "mediascanner/d-bus/service.hh"
 
 namespace mediascanner {
 

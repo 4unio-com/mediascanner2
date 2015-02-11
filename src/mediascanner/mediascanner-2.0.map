@@ -11,11 +11,41 @@ global:
         mediascanner::MediaStoreBase::*;
         mediascanner::Filter::*;
 
-        typeinfo?for?mediascanner::*;
-        typeinfo?name?for?mediascanner::*;
-        VTT?for?mediascanner::*;
-        virtual?thunk?to?mediascanner::*;
-        vtable?for?mediascanner::*;
+        typeinfo?for?mediascanner::MediaFile*;
+        typeinfo?name?for?mediascanner::MediaFile*;
+        VTT?for?mediascanner::MediaFile*;
+        virtual?thunk?to?mediascanner::MediaFile*;
+        vtable?for?mediascanner::MediaFile*;
+
+        typeinfo?for?mediascanner::Album*;
+        typeinfo?name?for?mediascanner::Album*;
+        VTT?for?mediascanner::Album*;
+        virtual?thunk?to?mediascanner::Album*;
+        vtable?for?mediascanner::Album*;
+
+        typeinfo?for?mediascanner::MediaFileBuilder*;
+        typeinfo?name?for?mediascanner::MediaFileBuilder*;
+        VTT?for?mediascanner::MediaFileBuilder*;
+        virtual?thunk?to?mediascanner::MediaFileBuilder*;
+        vtable?for?mediascanner::MediaFileBuilder*;
+
+        typeinfo?for?mediascanner::MediaStore*;
+        typeinfo?name?for?mediascanner::MediaStore*;
+        VTT?for?mediascanner::MediaStore*;
+        virtual?thunk?to?mediascanner::MediaStore*;
+        vtable?for?mediascanner::MediaStore*;
+
+        typeinfo?for?mediascanner::MediaStoreBase*;
+        typeinfo?name?for?mediascanner::MediaStoreBase*;
+        VTT?for?mediascanner::MediaStoreBase*;
+        virtual?thunk?to?mediascanner::MediaStoreBase*;
+        vtable?for?mediascanner::MediaStoreBase*;
+
+        typeinfo?for?mediascanner::Filter*;
+        typeinfo?name?for?mediascanner::Filter*;
+        VTT?for?mediascanner::Filter*;
+        virtual?thunk?to?mediascanner::Filter*;
+        vtable?for?mediascanner::Filter*;
     };
 
 local:

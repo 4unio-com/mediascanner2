@@ -12,8 +12,8 @@
 #include <mediascanner/MediaFile.hh>
 #include <mediascanner/MediaStore.hh>
 
-#include "dbus-interface.hh"
-#include "dbus-codec.hh"
+#include <mediascanner/d-bus/dbus-interface.hh>
+#include <mediascanner/d-bus/dbus-codec.hh>
 
 using core::dbus::Message;
 

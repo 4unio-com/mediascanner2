@@ -28,7 +28,7 @@
 #include <core/dbus/asio/executor.h>
 #include <mediascanner/Filter.hh>
 #include <mediascanner/MediaStore.hh>
-#include <ms-dbus/service-stub.hh>
+#include <mediascanner/d-bus/service-stub.hh>
 
 using namespace mediascanner::qml;
 

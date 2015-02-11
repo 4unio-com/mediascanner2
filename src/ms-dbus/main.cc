@@ -27,10 +27,10 @@
 using namespace mediascanner;
 
 int main(int , char **) {
-    auto bus = std::make_shared<core::dbus::Bus>(core::dbus::WellKnownBus::session);
+    auto bus = std::make_shared<core::dbus::Bus>(getenv("DBUS_SESSION_BUS_ADDRESS"));
     bus->install_executor(core::dbus::asio::make_executor(bus));
 
-    auto store = std::make_shared<MediaStore>(MS_READ_ONLY);
+    auto store = std::make_shared<MediaStore>(MS_READ_WRITE);
 
     dbus::ServiceSkeleton service(bus, store);
     service.run();

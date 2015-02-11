@@ -7,7 +7,7 @@
 #include <mediascanner/MediaFile.hh>
 #include <mediascanner/MediaFileBuilder.hh>
 #include <mediascanner/Filter.hh>
-#include <ms-dbus/dbus-codec.hh>
+#include <mediascanner/d-bus/dbus-codec.hh>
 
 class MediaStoreDBusTests : public ::testing::Test {
 protected:

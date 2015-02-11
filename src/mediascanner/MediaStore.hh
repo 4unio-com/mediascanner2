@@ -23,6 +23,13 @@
 #include "MediaStoreBase.hh"
 #include<vector>
 #include<string>
+#include<memory>
+
+namespace core {
+namespace dbus {
+class Bus;
+}
+}
 
 namespace mediascanner {
 
@@ -34,7 +41,8 @@ enum OpenType {
 class MediaStore final : public virtual MediaStoreBase {
 private:
     MediaStorePrivate *p;
-
+//    MediaStore(std::shared_ptr<core::dbus::Bus> testing_dbus){};
+//    friend class MediaStoreTest;
 public:
     MediaStore(OpenType access, const std::string &retireprefix="");
     MediaStore(const std::string &filename, OpenType access, const std::string &retireprefix="");

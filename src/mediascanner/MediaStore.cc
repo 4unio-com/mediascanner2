@@ -39,6 +39,7 @@
 #include "Filter.hh"
 #include "internal/sqliteutils.hh"
 #include "internal/utils.hh"
+#include "d-bus/service-stub.hh"
 
 using namespace std;
 
@@ -54,6 +55,11 @@ struct MediaStorePrivate {
     // http://sqlite.com/faq.html#q6
     std::mutex dbMutex;
 
+    OpenType access_;
+
+    std::unique_ptr<mediascanner::dbus::ServiceStub> media_store_dbus_;
+
+    MediaStorePrivate(OpenType access);
     void insert(const MediaFile &m) const;
     void remove(const std::string &fname) const;
     void insert_broken_file(const std::string &fname, const std::string &etag) const;
@@ -121,7 +127,7 @@ static void rankfunc(sqlite3_context *pCtx, int nVal, sqlite3_value **apVal) {
         **   (<hit count> / <global hit count>) * <column weight>
         **
         ** aPhraseinfo[] points to the start of the data for phrase iPhrase. So
-        ** the hit count and global hit counts for each column are found in 
+        ** the hit count and global hit counts for each column are found in
         ** aPhraseinfo[iCol*3] and aPhraseinfo[iCol*3+1], respectively.
         */
         const int32_t *aPhraseinfo = &aMatchinfo[2 + iPhrase*nCol*3];
@@ -287,6 +293,13 @@ DROP TABLE IF EXISTS broken_files;
     execute_sql(db, deleteCmd);
 }
 
+void activateWalMode(sqlite3 *db) {
+    string activateWalCmd(R"(
+PRAGMA journal_mode = WAL;
+)");
+    execute_sql(db, activateWalCmd);
+}
+
 void createTables(sqlite3 *db) {
     string schema(R"(
 CREATE TABLE schemaVersion (version INTEGER);
@@ -338,7 +351,7 @@ CREATE TABLE media_attic (
     type INTEGER   -- 0=Audio, 1=Video
 );
 
-CREATE VIRTUAL TABLE media_fts 
+CREATE VIRTUAL TABLE media_fts
 USING fts4(content='media', title, artist, album, tokenize=mozporter);
 
 CREATE TRIGGER media_bu BEFORE UPDATE ON media BEGIN
@@ -394,43 +407,51 @@ MediaStore::MediaStore(OpenType access, const std::string &retireprefix)
 
 MediaStore::MediaStore(const std::string &filename, OpenType access, const std::string &retireprefix) {
     int sqliteFlags = access == MS_READ_WRITE ? SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE : SQLITE_OPEN_READONLY;
-    p = new MediaStorePrivate();
+    p = new MediaStorePrivate(access);
+    if(access != MS_READ_WRITE) {
+        return;
+    }
     if(sqlite3_open_v2(filename.c_str(), &p->db, sqliteFlags, nullptr) != SQLITE_OK) {
         throw runtime_error(sqlite3_errmsg(p->db));
     }
     register_tokenizer(p->db);
     register_functions(p->db);
     int detectedSchemaVersion = getSchemaVersion(p->db);
-    if(access == MS_READ_WRITE) {
-        if(detectedSchemaVersion != schemaVersion) {
-            deleteTables(p->db);
-            createTables(p->db);
-        }
-        if(!retireprefix.empty())
-            archiveItems(retireprefix);
-    } else {
-        if(detectedSchemaVersion != schemaVersion) {
-            std::string msg("Tried to open a db with schema version ");
-            msg += std::to_string(detectedSchemaVersion);
-            msg += ", while supported version is ";
-            msg += std::to_string(schemaVersion) + ".";
-            throw runtime_error(msg);
-        }
+    activateWalMode(p->db);
+    if(detectedSchemaVersion != schemaVersion) {
+        deleteTables(p->db);
+        createTables(p->db);
     }
+    if(!retireprefix.empty())
+        archiveItems(retireprefix);
 }
 
 MediaStore::~MediaStore() {
-    sqlite3_close(p->db);
+    if(p->db) {
+        sqlite3_close(p->db);
+    }
     delete p;
 }
 
+MediaStorePrivate::MediaStorePrivate(OpenType access) : db(nullptr), access_(access), media_store_dbus_(nullptr) {
+    if(access_ != MS_READ_WRITE) {
+        media_store_dbus_.reset(new dbus::ServiceStub());
+    }
+}
+
 size_t MediaStorePrivate::size() const {
+    if(access_ != MS_READ_WRITE) {
+        throw runtime_error("MediaStorePrivate::size() is not available in read only mode");
+    }
     Statement count(db, "SELECT COUNT(*) FROM media");
     count.step();
     return count.getInt(0);
 }
 
 void MediaStorePrivate::insert(const MediaFile &m) const {
+    if(access_ != MS_READ_WRITE) {
+        throw runtime_error("MediaStorePrivate::insert() is not available in read only mode");
+    }
     Statement query(db, "INSERT OR REPLACE INTO media (filename, content_type, etag, title, date, artist, album, album_artist, genre, disc_number, track_number, duration, width, height, latitude, longitude, has_thumbnail, type)  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
     query.bind(1, m.getFileName());
     query.bind(2, m.getContentType());
@@ -466,12 +487,18 @@ void MediaStorePrivate::insert(const MediaFile &m) const {
 }
 
 void MediaStorePrivate::remove(const string &fname) const {
+    if(access_ != MS_READ_WRITE) {
+        throw runtime_error("MediaStorePrivate::remove() is not available in read only mode");
+    }
     Statement del(db, "DELETE FROM media WHERE filename = ?");
     del.bind(1, fname);
     del.step();
 }
 
 void MediaStorePrivate::insert_broken_file(const std::string &fname, const std::string &etag) const {
+    if(access_ != MS_READ_WRITE) {
+        throw runtime_error("MediaStorePrivate::insert_broken_file() is not available in read only mode");
+    }
     Statement del(db, "INSERT OR REPLACE INTO broken_files (filename, etag) VALUES (?, ?)");
     del.bind(1, fname);
     del.bind(2, etag);
@@ -479,12 +506,18 @@ void MediaStorePrivate::insert_broken_file(const std::string &fname, const std::
 }
 
 void MediaStorePrivate::remove_broken_file(const std::string &fname) const {
+    if(access_ != MS_READ_WRITE) {
+        throw runtime_error("MediaStorePrivate::remove_broken_file() is not available in read only mode");
+    }
     Statement del(db, "DELETE FROM broken_files WHERE filename = ?");
     del.bind(1, fname);
     del.step();
 }
 
 bool MediaStorePrivate::is_broken_file(const std::string &fname, const std::string &etag) const {
+    if(access_ != MS_READ_WRITE) {
+        throw runtime_error("MediaStorePrivate::is_broken_file() is not available in read only mode");
+    }
     Statement query(db, "SELECT * FROM broken_files WHERE filename = ? AND etag = ?");
     query.bind(1, fname);
     query.bind(2, etag);
@@ -521,6 +554,9 @@ static vector<MediaFile> collect_media(Statement &query) {
 }
 
 MediaFile MediaStorePrivate::lookup(const std::string &filename) const {
+    if(access_ != MS_READ_WRITE) {
+        return media_store_dbus_->lookup(filename);
+    }
     Statement query(db, R"(
 SELECT filename, content_type, etag, title, date, artist, album, album_artist, genre, disc_number, track_number, duration, width, height, latitude, longitude, has_thumbnail, type
   FROM media
@@ -534,6 +570,9 @@ SELECT filename, content_type, etag, title, date, artist, album, album_artist, g
 }
 
 vector<MediaFile> MediaStorePrivate::query(const std::string &core_term, MediaType type, const Filter &filter) const {
+    if(access_ != MS_READ_WRITE) {
+        return media_store_dbus_->query(core_term, type, filter);
+    }
     string qs(R"(
 SELECT filename, content_type, etag, title, date, artist, album, album_artist, genre, disc_number, track_number, duration, width, height, latitude, longitude, has_thumbnail, type
   FROM media
@@ -603,6 +642,9 @@ static vector<Album> collect_albums(Statement &query) {
 }
 
 vector<Album> MediaStorePrivate::queryAlbums(const std::string &core_term, const Filter &filter) const {
+    if(access_ != MS_READ_WRITE) {
+        return media_store_dbus_->queryAlbums(core_term, filter);
+    }
     string qs(R"(
 SELECT album, album_artist, first(date) as date, first(genre) as genre, first(filename) as filename, first(has_thumbnail) as has_thumbnail FROM media
 WHERE type = ? AND album <> ''
@@ -638,6 +680,9 @@ WHERE type = ? AND album <> ''
 }
 
 vector<string> MediaStorePrivate::queryArtists(const string &q, const Filter &filter) const {
+    if(access_ != MS_READ_WRITE) {
+        return media_store_dbus_->queryArtists(q, filter);
+    }
     string qs(R"(
 SELECT artist FROM media
 WHERE type = ? AND artist <> ''
@@ -677,6 +722,9 @@ WHERE type = ? AND artist <> ''
 }
 
 vector<MediaFile> MediaStorePrivate::getAlbumSongs(const Album& album) const {
+    if(access_ != MS_READ_WRITE) {
+        return media_store_dbus_->getAlbumSongs(album);
+    }
     Statement query(db, R"(
 SELECT filename, content_type, etag, title, date, artist, album, album_artist, genre, disc_number, track_number, duration, width, height, latitude, longitude, type FROM media
 WHERE album = ? AND album_artist = ? AND type = ?
@@ -689,6 +737,9 @@ ORDER BY disc_number, track_number
 }
 
 std::string MediaStorePrivate::getETag(const std::string &filename) const {
+    if(access_ != MS_READ_WRITE) {
+        return media_store_dbus_->getETag(filename);
+    }
     Statement query(db, R"(
 SELECT etag FROM media WHERE filename = ?
 )");
@@ -701,6 +752,9 @@ SELECT etag FROM media WHERE filename = ?
 }
 
 std::vector<MediaFile> MediaStorePrivate::listSongs(const Filter &filter) const {
+    if(access_ != MS_READ_WRITE) {
+        return media_store_dbus_->listSongs(filter);
+    }
     std::string qs(R"(
 SELECT filename, content_type, etag, title, date, artist, album, album_artist, genre, disc_number, track_number, duration, width, height, latitude, longitude, has_thumbnail, type
   FROM media
@@ -744,6 +798,9 @@ LIMIT ? OFFSET ?
 }
 
 std::vector<Album> MediaStorePrivate::listAlbums(const Filter &filter) const {
+    if(access_ != MS_READ_WRITE) {
+        return media_store_dbus_->listAlbums(filter);
+    }
     std::string qs(R"(
 SELECT album, album_artist, first(date) as date, first(genre) as genre, first(filename) as filename, first(has_thumbnail) as has_thumbnail FROM media
   WHERE type = ?
@@ -781,6 +838,9 @@ LIMIT ? OFFSET ?
 }
 
 vector<std::string> MediaStorePrivate::listArtists(const Filter &filter) const {
+    if(access_ != MS_READ_WRITE) {
+        return media_store_dbus_->listArtists(filter);
+    }
     string qs(R"(
 SELECT artist FROM media
   WHERE type = ?
@@ -810,6 +870,9 @@ SELECT artist FROM media
 }
 
 vector<std::string> MediaStorePrivate::listAlbumArtists(const Filter &filter) const {
+    if(access_ != MS_READ_WRITE) {
+        return media_store_dbus_->listAlbumArtists(filter);
+    }
     string qs(R"(
 SELECT album_artist FROM media
   WHERE type = ?
@@ -839,6 +902,9 @@ SELECT album_artist FROM media
 }
 
 vector<std::string> MediaStorePrivate::listGenres(const Filter &filter) const {
+    if(access_ != MS_READ_WRITE) {
+        return media_store_dbus_->listGenres(filter);
+    }
     Statement query(db, R"(
 SELECT genre FROM media
   WHERE type = ?
@@ -858,6 +924,9 @@ SELECT genre FROM media
 }
 
 void MediaStorePrivate::pruneDeleted() {
+    if(access_ != MS_READ_WRITE) {
+        throw runtime_error("MediaStorePrivate::pruneDeleted() is not available in read only mode");
+    }
     std::map<std::string, bool> path_cache;
     vector<string> deleted;
     Statement query(db, "SELECT filename FROM media");
@@ -877,6 +946,9 @@ void MediaStorePrivate::pruneDeleted() {
 }
 
 void MediaStorePrivate::archiveItems(const std::string &prefix) {
+    if(access_ != MS_READ_WRITE) {
+        throw runtime_error("MediaStorePrivate::archiveItems() is not available in read only mode");
+    }
     const char *templ = R"(BEGIN TRANSACTION;
 INSERT INTO media_attic SELECT * FROM media WHERE filename LIKE %s;
 DELETE FROM media WHERE filename LIKE %s;
@@ -894,6 +966,9 @@ COMMIT;
 }
 
 void MediaStorePrivate::restoreItems(const std::string &prefix) {
+    if(access_ != MS_READ_WRITE) {
+        throw runtime_error("MediaStorePrivate::restoreItems() is not available in read only mode");
+    }
     const char *templ = R"(BEGIN TRANSACTION;
 INSERT INTO media SELECT * FROM media_attic WHERE filename LIKE %s;
 DELETE FROM media_attic WHERE filename LIKE %s;

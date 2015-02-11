@@ -1,3 +1,19 @@
+pkg_check_modules(DBUSCPP dbus-cpp REQUIRED)
+pkg_check_modules(UNITY_API libunity-api>=0.1.3 REQUIRED)
+
+add_library(
+  mediascanner-dbus-static OBJECT
+  d-bus/dbus-codec.cc
+  d-bus/service-stub.cc
+)
+
+set_target_properties(
+  mediascanner-dbus-static
+  PROPERTIES
+    LINK_FLAGS "-Wl,--export-all-symbols"
+    COMPILE_FLAGS -fPIC
+)
+
 add_library(mediascanner SHARED
   MediaFile.cc
   MediaFileBuilder.cc
@@ -9,6 +25,7 @@ add_library(mediascanner SHARED
   utils.cc
   mozilla/fts3_porter.c
   mozilla/Normalize.c
+  $<TARGET_OBJECTS:mediascanner-dbus-static>
 )
 
 set(symbol_map "${CMAKE_CURRENT_SOURCE_DIR}/mediascanner-2.0.map")
@@ -16,8 +33,10 @@ set_target_properties(mediascanner PROPERTIES
     LINK_FLAGS "${ldflags} -Wl,--version-script,${symbol_map}")
 set_target_properties(mediascanner PROPERTIES LINK_DEPENDS ${symbol_map})
 
-add_definitions(${MEDIASCANNER_CFLAGS})
-target_link_libraries(mediascanner ${MEDIASCANNER_LIBRARIES})
+add_definitions(${DBUSCPP_CFLAGS} ${MEDIASCANNER_CFLAGS})
+
+include_directories(${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_SOURCE_DIR}/src ${UNITY_API_INCLUDE_DIRS})
+target_link_libraries(mediascanner ${MEDIASCANNER_LIBRARIES} ${DBUSCPP_LDFLAGS} ${UNITY_API_LDFLAGS})
 
 set_target_properties(mediascanner PROPERTIES
   OUTPUT_NAME "mediascanner-2.0"

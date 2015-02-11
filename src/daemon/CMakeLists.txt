@@ -9,6 +9,7 @@ add_library(scannerstuff STATIC
   SubtreeWatcher.cc
   Scanner.cc
   ../mediascanner/utils.cc
+  $<TARGET_OBJECTS:mediascanner-dbus-static>
 )
 
 target_link_libraries(scannerstuff ${GST_LIBRARIES} ${EXIF_LDFLAGS} ${UDISKS_LDFLAGS}

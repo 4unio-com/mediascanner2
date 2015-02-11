@@ -28,6 +28,7 @@ target_link_libraries(basic mediascanner scannerstuff gtest)
 add_test(basic basic)
 
 add_executable(test_mediastore test_mediastore.cc ../src/mediascanner/utils.cc)
+qt5_use_modules(test_mediastore Core)
 target_link_libraries(test_mediastore mediascanner gtest)
 add_test(test_mediastore test_mediastore)
 
@@ -43,11 +44,11 @@ add_executable(test_mfbuilder test_mfbuilder.cc)
 target_link_libraries(test_mfbuilder gtest mediascanner)
 add_test(test_mfbuilder test_mfbuilder)
 
-add_executable(test_dbus test_dbus.cc)
+add_executable(test_dbus test_dbus.cc $<TARGET_OBJECTS:mediascanner-dbus-static>)
 target_link_libraries(test_dbus gtest mediascanner ms-dbus)
 add_test(test_dbus test_dbus)
 
-add_executable(test_qml test_qml.cc)
+add_executable(test_qml test_qml.cc $<TARGET_OBJECTS:mediascanner-dbus-static>)
 qt5_use_modules(test_qml QuickTest)
 target_link_libraries(test_qml mediascanner ${DBUSCPP_LDFLAGS})
 add_test(test_qml test_qml -input ${CMAKE_CURRENT_SOURCE_DIR}/qml -import ${CMAKE_BINARY_DIR}/src/qml)
