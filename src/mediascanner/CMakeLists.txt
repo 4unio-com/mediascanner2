@@ -1,5 +1,4 @@
 pkg_check_modules(DBUSCPP dbus-cpp REQUIRED)
-pkg_check_modules(UNITY_API libunity-api>=0.1.3 REQUIRED)
 
 add_library(
   mediascanner-dbus-static OBJECT
@@ -35,8 +34,8 @@ set_target_properties(mediascanner PROPERTIES LINK_DEPENDS ${symbol_map})
 
 add_definitions(${DBUSCPP_CFLAGS} ${MEDIASCANNER_CFLAGS})
 
-include_directories(${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_SOURCE_DIR}/src ${UNITY_API_INCLUDE_DIRS})
-target_link_libraries(mediascanner ${MEDIASCANNER_LIBRARIES} ${DBUSCPP_LDFLAGS} ${UNITY_API_LDFLAGS})
+include_directories(${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_SOURCE_DIR}/src)
+target_link_libraries(mediascanner ${MEDIASCANNER_LIBRARIES} ${DBUSCPP_LDFLAGS})
 
 set_target_properties(mediascanner PROPERTIES
   OUTPUT_NAME "mediascanner-2.0"
