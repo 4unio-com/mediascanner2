@@ -2,12 +2,18 @@ if (NOT DEFINED GTEST_ROOT)
     set(GTEST_ROOT /usr/src/gtest)
 endif()
 
+set(SOURCE_BINARY_DIR "${CMAKE_BINARY_DIR}/src")
+add_definitions(-DMS_DBUS_BINARY="${SOURCE_BINARY_DIR}/ms-dbus/mediascanner-dbus-2.0")
+
 set(GTEST_SRC_DIR "${GTEST_ROOT}/src")
 set(GTEST_INCLUDE_DIR ${GTEST_ROOT})
 
 add_library(gtest STATIC
 ${GTEST_SRC_DIR}/gtest-all.cc
 )
+
+pkg_check_modules(QTDBUSTEST REQUIRED libqtdbustest-1 REQUIRED)
+include_directories(${QTDBUSTEST_INCLUDE_DIRS})
 
 set_target_properties(gtest PROPERTIES INCLUDE_DIRECTORIES ${GTEST_INCLUDE_DIR})
 target_link_libraries(gtest ${CMAKE_THREAD_LIBS_INIT})
@@ -25,11 +31,14 @@ include_directories(${CMAKE_CURRENT_BINARY_DIR})
 
 add_executable(basic basic.cc)
 target_link_libraries(basic mediascanner scannerstuff gtest)
-add_test(basic basic)
+#add_test(basic basic)
 
-add_executable(test_mediastore test_mediastore.cc ../src/mediascanner/utils.cc)
-qt5_use_modules(test_mediastore Core)
-target_link_libraries(test_mediastore mediascanner gtest)
+add_executable(test_mediastore
+               test_mediastore.cc
+               ../src/mediascanner/utils.cc
+               utils/DBusTest.cpp)
+qt5_use_modules(test_mediastore Core DBus)
+target_link_libraries(test_mediastore mediascanner gtest ${QTDBUSTEST_LDFLAGS})
 add_test(test_mediastore test_mediastore)
 
 add_executable(test_metadataextractor test_metadataextractor.cc)

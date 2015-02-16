@@ -33,75 +33,23 @@
 
 #include <QProcess>
 #include <QProcessEnvironment>
+#include <QCoreApplication>
 
 #include "test_config.h"
+#include "utils/DBusTest.h"
 
 using namespace std;
 using namespace mediascanner;
 
-class MediaStoreTest : public ::testing::Test {
- protected:
-  MediaStoreTest() {
-  }
-
-  virtual ~MediaStoreTest() {
-  }
-
-  virtual void SetUp() {
-      // open the database in read_write mode to create it if doesn't exist.
-      MediaStore *store = new MediaStore(TEST_DIR "/mediastore.db", MS_READ_WRITE);
-      delete store;
-
-      setenv("MEDIASCANNER_CACHEDIR", TEST_DIR, true);
-      QStringList args;
-      args << "--session" << "--print-address";
-      dbus.start("/bin/dbus-daemon", args, QIODevice::ReadOnly);
-      if(!dbus.waitForStarted()) {
-          throw std::runtime_error("Failed to start dbus-daemon.");
-      }
-      dbus.setReadChannel(QProcess::StandardOutput);
-      dbus.waitForReadyRead();
-
-      QByteArray bus_address = dbus.readLine();
-      bus_address[bus_address.length()-1] = '\0'; // Chop off \n.
-      setenv("DBUS_SESSION_BUS_ADDRESS", bus_address.data(), true);
-
-      daemon.setProgram(TEST_DIR "/../src/ms-dbus/mediascanner-dbus-2.0");
-      daemon.setProcessChannelMode(QProcess::ForwardedChannels);
-      daemon.start();
-      daemon.closeWriteChannel();
-      if (!daemon.waitForStarted()) {
-          throw std::runtime_error("Failed to start mediascanner-dbus-2.0");
-      }
-  }
-
-  virtual void TearDown() {
-      dbus.kill();
-      if (!dbus.waitForFinished()) {
-          fprintf(stderr, "Failed to stop dbus-daemon.\n");
-      }
-      daemon.kill();
-      if (!daemon.waitForFinished()) {
-          fprintf(stderr, "Failed to stop mediascanner-dbus-2.0\n");
-      }
-      // remove the database
-      remove(TEST_DIR "/mediastore.db");
-  }
-
-  QProcess daemon;
-  QProcess dbus;
-//  std::unique_ptr<core::dbus::Fixture> dbus_fixture;
-};
-
-TEST_F(MediaStoreTest, init) {
+TEST(MediaStoreTest, init) {
     MediaStore store(":memory:", MS_READ_WRITE);
 }
-TEST_F(MediaStoreTest, mediafile_uri) {
+TEST(MediaStoreTest, mediafile_uri) {
     MediaFile media = MediaFileBuilder("/path/to/file.ogg");
     EXPECT_EQ(media.getUri(), "file:///path/to/file.ogg");
 }
 
-TEST_F(MediaStoreTest, equality) {
+TEST(MediaStoreTest, equality) {
     MediaFile audio1 = MediaFileBuilder("a")
         .setContentType("type")
         .setETag("etag")
@@ -182,7 +130,7 @@ TEST_F(MediaStoreTest, equality) {
     EXPECT_NE(video1, image1);
 }
 
-TEST_F(MediaStoreTest, lookup) {
+TEST(MediaStoreTest, lookup) {
     MediaFile audio = MediaFileBuilder("/aaa")
         .setContentType("type")
         .setETag("etag")
@@ -201,9 +149,11 @@ TEST_F(MediaStoreTest, lookup) {
 
     EXPECT_EQ(store.lookup("/aaa"), audio);
     EXPECT_THROW(store.lookup("not found"), std::runtime_error);
+
+    store.remove(audio.getFileName());
 }
 
-TEST_F(MediaStoreTest, roundtrip) {
+TEST(MediaStoreTest, roundtrip) {
     MediaFile audio = MediaFileBuilder("/aaa")
         .setContentType("type")
         .setETag("etag")
@@ -254,6 +204,10 @@ TEST_F(MediaStoreTest, roundtrip) {
     result = store.query("bbb", ImageMedia, filter);
     ASSERT_EQ(1, result.size());
     EXPECT_EQ(image, result[0]);
+
+    store.remove(audio.getFileName());
+    store.remove(video.getFileName());
+    store.remove(image.getFileName());
 }
 
 void check_query_by_album(MediaStore const &store, MediaFile const &audio) {
@@ -263,7 +217,7 @@ void check_query_by_album(MediaStore const &store, MediaFile const &audio) {
     EXPECT_EQ(result[0], audio);
 }
 
-TEST_F(MediaStoreTest, query_by_album) {
+TEST(MediaStoreTest, query_by_album) {
     MediaFile audio = MediaFileBuilder("/path/foo.ogg")
         .setType(AudioMedia)
         .setTitle("title")
@@ -278,6 +232,9 @@ TEST_F(MediaStoreTest, query_by_album) {
     // test read only
     MediaStore store2(TEST_DIR "/mediastore.db", MS_READ_ONLY);
     check_query_by_album(store2, audio);
+
+    store.remove(audio.getFileName());
+
 }
 
 void check_query_by_artist(MediaStore const &store, MediaFile const &audio) {
@@ -287,7 +244,7 @@ void check_query_by_artist(MediaStore const &store, MediaFile const &audio) {
     EXPECT_EQ(result[0], audio);
 }
 
-TEST_F(MediaStoreTest, query_by_artist) {
+TEST(MediaStoreTest, query_by_artist) {
     MediaFile audio = MediaFileBuilder("/path/foo.ogg")
         .setType(AudioMedia)
         .setTitle("title")
@@ -301,6 +258,8 @@ TEST_F(MediaStoreTest, query_by_artist) {
 
     MediaStore store_ro(TEST_DIR "/mediastore.db", MS_READ_ONLY);
     check_query_by_artist(store_ro, audio);
+
+    store.remove(audio.getFileName());
 }
 
 void check_query_ranking(MediaStore const &store, std::vector<MediaFile> const &files) {
@@ -313,7 +272,7 @@ void check_query_ranking(MediaStore const &store, std::vector<MediaFile> const &
     EXPECT_EQ(result[3], files[2]); // then artist
 }
 
-TEST_F(MediaStoreTest, query_ranking) {
+TEST(MediaStoreTest, query_ranking) {
     MediaFile audio1 = MediaFileBuilder("/path/foo1.ogg")
         .setType(AudioMedia)
         .setTitle("title")
@@ -367,6 +326,10 @@ TEST_F(MediaStoreTest, query_ranking) {
 
     MediaStore store_ro(TEST_DIR "/mediastore.db", MS_READ_ONLY);
     check_query_ranking(store_ro, files);
+
+    for(auto item: files) {
+        store.remove(item.getFileName());
+    }
 }
 
 void check_query_limit(MediaStore const &store,
@@ -381,7 +344,7 @@ void check_query_limit(MediaStore const &store,
     EXPECT_EQ(result[1], audio2); // title has highest weighting
 }
 
-TEST_F(MediaStoreTest, query_limit) {
+TEST(MediaStoreTest, query_limit) {
     MediaFile audio1 = MediaFileBuilder("/path/foo5.ogg")
         .setType(AudioMedia)
         .setTitle("title aaa")
@@ -410,6 +373,10 @@ TEST_F(MediaStoreTest, query_limit) {
 
     MediaStore store_ro(TEST_DIR "/mediastore.db", MS_READ_ONLY);
     check_query_limit(store_ro, audio1, audio2, audio3);
+
+    store.remove(audio1.getFileName());
+    store.remove(audio2.getFileName());
+    store.remove(audio3.getFileName());
 }
 
 void check_query_short(MediaStore const &store, MediaFile const &, MediaFile const &) {
@@ -420,7 +387,7 @@ void check_query_short(MediaStore const &store, MediaFile const &, MediaFile con
     EXPECT_EQ(result.size(), 1);
 }
 
-TEST_F(MediaStoreTest, query_short) {
+TEST(MediaStoreTest, query_short) {
     MediaFile audio1 = MediaFileBuilder("/path/foo5.ogg")
         .setType(AudioMedia)
         .setTitle("title xyz")
@@ -442,6 +409,9 @@ TEST_F(MediaStoreTest, query_short) {
 
     MediaStore store_ro(TEST_DIR "/mediastore.db", MS_READ_ONLY);
     check_query_short(store_ro, audio1, audio2);
+
+    store.remove(audio1.getFileName());
+    store.remove(audio2.getFileName());
 }
 
 void check_query_empty(MediaStore const &store) {
@@ -452,7 +422,7 @@ void check_query_empty(MediaStore const &store) {
     ASSERT_EQ(result.size(), 2);
 }
 
-TEST_F(MediaStoreTest, query_empty) {
+TEST(MediaStoreTest, query_empty) {
     MediaFile audio1 = MediaFileBuilder("/path/foo5.ogg")
         .setType(AudioMedia)
         .setTitle("title aaa")
@@ -481,6 +451,10 @@ TEST_F(MediaStoreTest, query_empty) {
 
     MediaStore store_ro(TEST_DIR "/mediastore.db", MS_READ_ONLY);
     check_query_empty(store_ro);
+
+    store.remove(audio1.getFileName());
+    store.remove(audio2.getFileName());
+    store.remove(audio3.getFileName());
 }
 
 void check_query_order(MediaStore const &store,
@@ -546,7 +520,7 @@ void check_query_order(MediaStore const &store,
     EXPECT_EQ(name1, result[2].getFileName());
 }
 
-TEST_F(MediaStoreTest, query_order) {
+TEST(MediaStoreTest, query_order) {
     MediaFile audio1 = MediaFileBuilder("/path/foo1.ogg")
         .setType(AudioMedia)
         .setTitle("foo")
@@ -575,9 +549,13 @@ TEST_F(MediaStoreTest, query_order) {
 
     MediaStore store_ro(TEST_DIR "/mediastore.db", MS_READ_ONLY);
     check_query_order(store_ro, "/path/foo1.ogg", "/path/foo2.ogg", "/path/foo3.ogg");
+
+    store.remove(audio1.getFileName());
+    store.remove(audio2.getFileName());
+    store.remove(audio3.getFileName());
 }
 
-TEST_F(MediaStoreTest, unmount) {
+TEST(MediaStoreTest, unmount) {
     MediaFile audio1 = MediaFileBuilder("/media/username/dir/fname.ogg")
         .setType(AudioMedia)
         .setTitle("bbb bbb");
@@ -601,7 +579,7 @@ TEST_F(MediaStoreTest, unmount) {
     ASSERT_EQ(result.size(), 2);
 }
 
-TEST_F(MediaStoreTest, utils) {
+TEST(MediaStoreTest, utils) {
     string source("_a.b(c)[d]{e}f.mp3");
     string correct = {" a b c  d  e f"};
     string result = filenameToTitle(source);
@@ -639,7 +617,7 @@ void check_query_albums(MediaStore const &store) {
     EXPECT_EQ(albums[0].getArtist(), "Various Artists");
 }
 
-TEST_F(MediaStoreTest, queryAlbums) {
+TEST(MediaStoreTest, queryAlbums) {
     MediaFile audio1 = MediaFileBuilder("/home/username/Music/track1.ogg")
         .setType(AudioMedia)
         .setTitle("TitleOne")
@@ -691,6 +669,11 @@ TEST_F(MediaStoreTest, queryAlbums) {
 
     MediaStore store_ro(TEST_DIR "/mediastore.db", MS_READ_ONLY);
     check_query_albums(store_ro);
+
+    store.remove(audio1.getFileName());
+    store.remove(audio2.getFileName());
+    store.remove(audio3.getFileName());
+    store.remove(audio4.getFileName());
 }
 
 void check_query_albums_limit(MediaStore const &store) {
@@ -702,7 +685,7 @@ void check_query_albums_limit(MediaStore const &store) {
     EXPECT_EQ(1, albums.size());
 }
 
-TEST_F(MediaStoreTest, queryAlbums_limit) {
+TEST(MediaStoreTest, queryAlbums_limit) {
     MediaFile audio1 = MediaFileBuilder("/home/username/Music/track1.ogg")
         .setType(AudioMedia)
         .setTitle("TitleOne")
@@ -745,6 +728,11 @@ TEST_F(MediaStoreTest, queryAlbums_limit) {
 
     MediaStore store_ro(TEST_DIR "/mediastore.db", MS_READ_ONLY);
     check_query_albums_limit(store_ro);
+
+    store.remove(audio1.getFileName());
+    store.remove(audio2.getFileName());
+    store.remove(audio3.getFileName());
+    store.remove(audio4.getFileName());
 }
 
 void check_query_albums_empty(MediaStore const &store) {
@@ -756,7 +744,7 @@ void check_query_albums_empty(MediaStore const &store) {
     EXPECT_EQ(1, albums.size());
 }
 
-TEST_F(MediaStoreTest, queryAlbums_empty) {
+TEST(MediaStoreTest, queryAlbums_empty) {
     MediaFile audio1 = MediaFileBuilder("/home/username/Music/track1.ogg")
         .setType(AudioMedia)
         .setTitle("TitleOne")
@@ -799,6 +787,11 @@ TEST_F(MediaStoreTest, queryAlbums_empty) {
 
     MediaStore store_ro(TEST_DIR "/mediastore.db", MS_READ_ONLY);
     check_query_albums_empty(store_ro);
+
+    store.remove(audio1.getFileName());
+    store.remove(audio2.getFileName());
+    store.remove(audio3.getFileName());
+    store.remove(audio4.getFileName());
 }
 
 void check_query_albums_order(MediaStore const &store) {
@@ -833,7 +826,7 @@ void check_query_albums_order(MediaStore const &store) {
     EXPECT_THROW(store.queryAlbums("foo", filter), std::runtime_error);
 }
 
-TEST_F(MediaStoreTest, queryAlbums_order) {
+TEST(MediaStoreTest, queryAlbums_order) {
     MediaFile audio1 = MediaFileBuilder("/path/foo1.ogg")
         .setType(AudioMedia)
         .setTitle("title")
@@ -862,6 +855,10 @@ TEST_F(MediaStoreTest, queryAlbums_order) {
 
     MediaStore store_ro(TEST_DIR "/mediastore.db", MS_READ_ONLY);
     check_query_albums_order(store_ro);
+
+    store.remove(audio1.getFileName());
+    store.remove(audio2.getFileName());
+    store.remove(audio3.getFileName());
 }
 
 void check_query_artists(MediaStore const &store) {
@@ -882,7 +879,7 @@ void check_query_artists(MediaStore const &store) {
     EXPECT_EQ(artists[0], "ArtistTwo");
 }
 
-TEST_F(MediaStoreTest, queryArtists) {
+TEST(MediaStoreTest, queryArtists) {
     MediaFile audio1 = MediaFileBuilder("/home/username/Music/track1.ogg")
         .setType(AudioMedia)
         .setTitle("TitleOne")
@@ -925,6 +922,11 @@ TEST_F(MediaStoreTest, queryArtists) {
 
     MediaStore store_ro(TEST_DIR "/mediastore.db", MS_READ_ONLY);
     check_query_artists(store_ro);
+
+    store.remove(audio1.getFileName());
+    store.remove(audio2.getFileName());
+    store.remove(audio3.getFileName());
+    store.remove(audio4.getFileName());
 }
 
 void check_query_artists_limit(MediaStore const &store) {
@@ -936,7 +938,7 @@ void check_query_artists_limit(MediaStore const &store) {
     EXPECT_EQ(1, artists.size());
 }
 
-TEST_F(MediaStoreTest, queryArtists_limit) {
+TEST(MediaStoreTest, queryArtists_limit) {
     MediaFile audio1 = MediaFileBuilder("/home/username/Music/track1.ogg")
         .setType(AudioMedia)
         .setTitle("TitleOne")
@@ -962,6 +964,9 @@ TEST_F(MediaStoreTest, queryArtists_limit) {
 
     MediaStore store_ro(TEST_DIR "/mediastore.db", MS_READ_ONLY);
     check_query_artists_limit(store_ro);
+
+    store.remove(audio1.getFileName());
+    store.remove(audio2.getFileName());
 }
 
 void check_query_artists_empty(MediaStore const &store) {
@@ -973,7 +978,7 @@ void check_query_artists_empty(MediaStore const &store) {
     EXPECT_EQ(1, artists.size());
 }
 
-TEST_F(MediaStoreTest, queryArtists_empty) {
+TEST(MediaStoreTest, queryArtists_empty) {
     MediaFile audio1 = MediaFileBuilder("/home/username/Music/track1.ogg")
         .setType(AudioMedia)
         .setTitle("TitleOne")
@@ -999,6 +1004,9 @@ TEST_F(MediaStoreTest, queryArtists_empty) {
 
     MediaStore store_ro(TEST_DIR "/mediastore.db", MS_READ_ONLY);
     check_query_artists_empty(store_ro);
+
+    store.remove(audio1.getFileName());
+    store.remove(audio2.getFileName());
 }
 
 void check_query_artists_order(MediaStore const &store) {
@@ -1033,7 +1041,7 @@ void check_query_artists_order(MediaStore const &store) {
     EXPECT_THROW(store.queryArtists("foo", filter), std::runtime_error);
 }
 
-TEST_F(MediaStoreTest, queryArtists_order) {
+TEST(MediaStoreTest, queryArtists_order) {
     MediaFile audio1 = MediaFileBuilder("/path/foo1.ogg")
         .setType(AudioMedia)
         .setTitle("title")
@@ -1062,6 +1070,10 @@ TEST_F(MediaStoreTest, queryArtists_order) {
 
     MediaStore store_ro(TEST_DIR "/mediastore.db", MS_READ_ONLY);
     check_query_artists_order(store_ro);
+
+    store.remove(audio1.getFileName());
+    store.remove(audio2.getFileName());
+    store.remove(audio3.getFileName());
 }
 
 void check_album_songs(MediaStore const &store) {
@@ -1073,7 +1085,7 @@ void check_album_songs(MediaStore const &store) {
     EXPECT_EQ(tracks[2].getTitle(), "TitleThree");
 }
 
-TEST_F(MediaStoreTest, getAlbumSongs) {
+TEST(MediaStoreTest, getAlbumSongs) {
     MediaFile audio1 = MediaFileBuilder("/home/username/Music/track1.ogg")
         .setType(AudioMedia)
         .setTitle("TitleOne")
@@ -1108,6 +1120,10 @@ TEST_F(MediaStoreTest, getAlbumSongs) {
 
     MediaStore store_ro(TEST_DIR "/mediastore.db", MS_READ_ONLY);
     check_album_songs(store_ro);
+
+    store.remove(audio1.getFileName());
+    store.remove(audio2.getFileName());
+    store.remove(audio3.getFileName());
 }
 
 void check_get_etag(MediaStore const &store) {
@@ -1115,7 +1131,7 @@ void check_get_etag(MediaStore const &store) {
     EXPECT_EQ(store.getETag("/something-else.mp3"), "");
 }
 
-TEST_F(MediaStoreTest, getETag) {
+TEST(MediaStoreTest, getETag) {
     MediaFile file = MediaFileBuilder("/path/file.ogg")
         .setETag("etag")
         .setType(AudioMedia);
@@ -1127,9 +1143,11 @@ TEST_F(MediaStoreTest, getETag) {
 
     MediaStore store_ro(TEST_DIR "/mediastore.db", MS_READ_ONLY);
     check_get_etag(store_ro);
+
+    store.remove(file.getFileName());
 }
 
-TEST_F(MediaStoreTest, constraints) {
+TEST(MediaStoreTest, constraints) {
     MediaFile file = MediaFileBuilder("no_slash_at_beginning.ogg")
         .setETag("etag")
         .setType(AudioMedia);
@@ -1197,7 +1215,7 @@ void check_list_songs(MediaStore const &store) {
     EXPECT_EQ(3, tracks.size());
 }
 
-TEST_F(MediaStoreTest, listSongs) {
+TEST(MediaStoreTest, listSongs) {
     MediaFile audio1 = MediaFileBuilder("/home/username/Music/track1.ogg")
         .setType(AudioMedia)
         .setTitle("TitleOne")
@@ -1247,6 +1265,13 @@ TEST_F(MediaStoreTest, listSongs) {
 
     MediaStore store_ro(TEST_DIR "/mediastore.db", MS_READ_ONLY);
     check_list_songs(store_ro);
+
+    store.remove(audio1.getFileName());
+    store.remove(audio2.getFileName());
+    store.remove(audio3.getFileName());
+    store.remove(audio4.getFileName());
+    store.remove(audio5.getFileName());
+    store.remove(audio6.getFileName());
 }
 
 void check_list_albums(MediaStore const &store) {
@@ -1280,7 +1305,7 @@ void check_list_albums(MediaStore const &store) {
         EXPECT_EQ(1, albums.size());
 }
 
-TEST_F(MediaStoreTest, listAlbums) {
+TEST(MediaStoreTest, listAlbums) {
     MediaFile audio1 = MediaFileBuilder("/home/username/Music/track1.ogg")
         .setType(AudioMedia)
         .setTitle("TitleOne")
@@ -1323,6 +1348,12 @@ TEST_F(MediaStoreTest, listAlbums) {
 
     MediaStore store_ro(TEST_DIR "/mediastore.db", MS_READ_ONLY);
     check_list_albums(store_ro);
+
+    store.remove(audio1.getFileName());
+    store.remove(audio2.getFileName());
+    store.remove(audio3.getFileName());
+    store.remove(audio4.getFileName());
+    store.remove(audio5.getFileName());
 }
 
 void check_list_artists(MediaStore const &store) {
@@ -1346,7 +1377,7 @@ void check_list_artists(MediaStore const &store) {
     EXPECT_EQ("Various Artists", artists[2]);
 }
 
-TEST_F(MediaStoreTest, listArtists) {
+TEST(MediaStoreTest, listArtists) {
     MediaFile audio1 = MediaFileBuilder("/home/username/Music/track1.ogg")
         .setType(AudioMedia)
         .setTitle("TitleOne")
@@ -1389,34 +1420,51 @@ TEST_F(MediaStoreTest, listArtists) {
 
     MediaStore store_ro(TEST_DIR "/mediastore.db", MS_READ_ONLY);
     check_list_artists(store_ro);
+
+    store.remove(audio1.getFileName());
+    store.remove(audio2.getFileName());
+    store.remove(audio3.getFileName());
+    store.remove(audio4.getFileName());
+    store.remove(audio5.getFileName());
 }
 
-TEST_F(MediaStoreTest, brokenFiles) {
-    MediaStore store(":memory:", MS_READ_WRITE);
-    std::string file = "/foo/bar/baz.mp3";
-    std::string other_file = "/foo/bar/abc.mp3";
-    std::string broken_etag = "123";
-    std::string ok_etag = "124";
+TEST(MediaStoreTest, brokenFiles) {
+    try {
+        MediaStore store(":memory:", MS_READ_WRITE);
+        std::string file = "/foo/bar/baz.mp3";
+        std::string other_file = "/foo/bar/abc.mp3";
+        std::string broken_etag = "123";
+        std::string ok_etag = "124";
 
-    ASSERT_FALSE(store.is_broken_file(file, broken_etag));
-    ASSERT_FALSE(store.is_broken_file(file, ok_etag));
-    ASSERT_FALSE(store.is_broken_file(other_file, ok_etag));
-    ASSERT_FALSE(store.is_broken_file(other_file, broken_etag));
+        ASSERT_FALSE(store.is_broken_file(file, broken_etag));
+        ASSERT_FALSE(store.is_broken_file(file, ok_etag));
+        ASSERT_FALSE(store.is_broken_file(other_file, ok_etag));
+        ASSERT_FALSE(store.is_broken_file(other_file, broken_etag));
 
-    store.insert_broken_file(file, broken_etag);
-    ASSERT_TRUE(store.is_broken_file(file, broken_etag));
-    ASSERT_FALSE(store.is_broken_file(file, ok_etag));
-    ASSERT_FALSE(store.is_broken_file(other_file, ok_etag));
-    ASSERT_FALSE(store.is_broken_file(other_file, broken_etag));
+        store.insert_broken_file(file, broken_etag);
+        ASSERT_TRUE(store.is_broken_file(file, broken_etag));
+        ASSERT_FALSE(store.is_broken_file(file, ok_etag));
+        ASSERT_FALSE(store.is_broken_file(other_file, ok_etag));
+        ASSERT_FALSE(store.is_broken_file(other_file, broken_etag));
 
-    store.remove_broken_file(file);
-    ASSERT_FALSE(store.is_broken_file(file, broken_etag));
-    ASSERT_FALSE(store.is_broken_file(file, ok_etag));
-    ASSERT_FALSE(store.is_broken_file(other_file, ok_etag));
-    ASSERT_FALSE(store.is_broken_file(other_file, broken_etag));
+        store.remove_broken_file(file);
+        ASSERT_FALSE(store.is_broken_file(file, broken_etag));
+        ASSERT_FALSE(store.is_broken_file(file, ok_etag));
+        ASSERT_FALSE(store.is_broken_file(other_file, ok_etag));
+        ASSERT_FALSE(store.is_broken_file(other_file, broken_etag));
+    } catch(...) {
+        FAIL();
+    }
+
 }
 
 int main(int argc, char **argv) {
+    QCoreApplication app(argc, argv);
+
+    MediaScannerTestUtils::DBusTest test;
+    test.SetUp();
     ::testing::InitGoogleTest(&argc, argv);
-    return RUN_ALL_TESTS();
+    auto ret_code=RUN_ALL_TESTS();
+    std::cout << "WE'LL SEE NOW SOME ERRORS WHEN DESTROYING THE D-BUS INTERNALS" << std::endl;
+    return ret_code;
 }

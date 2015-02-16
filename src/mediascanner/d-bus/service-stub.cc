@@ -44,7 +44,7 @@ ServiceStub::ServiceStub(core::dbus::Bus::Ptr bus)
 }
 
 ServiceStub::ServiceStub()
-    : core::dbus::Stub<MediaStoreService>(std::make_shared<core::dbus::Bus>(getenv("DBUS_SESSION_BUS_ADDRESS"))),
+    : core::dbus::Stub<MediaStoreService>(std::make_shared<core::dbus::Bus>(core::dbus::WellKnownBus::session)),
       p(new Private{access_service()->object_for_path(
                   core::dbus::types::ObjectPath(core::dbus::traits::Service<MediaStoreService>::object_path()))}) {
 }
