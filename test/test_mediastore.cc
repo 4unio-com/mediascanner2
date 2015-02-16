@@ -1429,33 +1429,28 @@ TEST(MediaStoreTest, listArtists) {
 }
 
 TEST(MediaStoreTest, brokenFiles) {
-    try {
-        MediaStore store(":memory:", MS_READ_WRITE);
-        std::string file = "/foo/bar/baz.mp3";
-        std::string other_file = "/foo/bar/abc.mp3";
-        std::string broken_etag = "123";
-        std::string ok_etag = "124";
+    MediaStore store(":memory:", MS_READ_WRITE);
+    std::string file = "/foo/bar/baz.mp3";
+    std::string other_file = "/foo/bar/abc.mp3";
+    std::string broken_etag = "123";
+    std::string ok_etag = "124";
 
-        ASSERT_FALSE(store.is_broken_file(file, broken_etag));
-        ASSERT_FALSE(store.is_broken_file(file, ok_etag));
-        ASSERT_FALSE(store.is_broken_file(other_file, ok_etag));
-        ASSERT_FALSE(store.is_broken_file(other_file, broken_etag));
+    ASSERT_FALSE(store.is_broken_file(file, broken_etag));
+    ASSERT_FALSE(store.is_broken_file(file, ok_etag));
+    ASSERT_FALSE(store.is_broken_file(other_file, ok_etag));
+    ASSERT_FALSE(store.is_broken_file(other_file, broken_etag));
 
-        store.insert_broken_file(file, broken_etag);
-        ASSERT_TRUE(store.is_broken_file(file, broken_etag));
-        ASSERT_FALSE(store.is_broken_file(file, ok_etag));
-        ASSERT_FALSE(store.is_broken_file(other_file, ok_etag));
-        ASSERT_FALSE(store.is_broken_file(other_file, broken_etag));
+    store.insert_broken_file(file, broken_etag);
+    ASSERT_TRUE(store.is_broken_file(file, broken_etag));
+    ASSERT_FALSE(store.is_broken_file(file, ok_etag));
+    ASSERT_FALSE(store.is_broken_file(other_file, ok_etag));
+    ASSERT_FALSE(store.is_broken_file(other_file, broken_etag));
 
-        store.remove_broken_file(file);
-        ASSERT_FALSE(store.is_broken_file(file, broken_etag));
-        ASSERT_FALSE(store.is_broken_file(file, ok_etag));
-        ASSERT_FALSE(store.is_broken_file(other_file, ok_etag));
-        ASSERT_FALSE(store.is_broken_file(other_file, broken_etag));
-    } catch(...) {
-        FAIL();
-    }
-
+    store.remove_broken_file(file);
+    ASSERT_FALSE(store.is_broken_file(file, broken_etag));
+    ASSERT_FALSE(store.is_broken_file(file, ok_etag));
+    ASSERT_FALSE(store.is_broken_file(other_file, ok_etag));
+    ASSERT_FALSE(store.is_broken_file(other_file, broken_etag));
 }
 
 int main(int argc, char **argv) {
@@ -1465,6 +1460,6 @@ int main(int argc, char **argv) {
     test.SetUp();
     ::testing::InitGoogleTest(&argc, argv);
     auto ret_code=RUN_ALL_TESTS();
-    std::cout << "WE'LL SEE NOW SOME ERRORS WHEN DESTROYING THE D-BUS INTERNALS" << std::endl;
+    std::cout << "WE'LL SEE NOW SOME ERRORS WHEN DESTROYING THE D-BUS INTERNALS. This is due bug: https://bugs.launchpad.net/dbus-cpp/+bug/1422304" << std::endl;
     return ret_code;
 }
