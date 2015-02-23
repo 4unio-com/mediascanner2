@@ -415,7 +415,7 @@ void MetadataExtractorPrivate::extract_pixbuf(const int fd, MediaFileBuilder &mf
     }
 
     struct stat info;
-    if(stat(filename.c_str(), &info) == 0) {
+    if(fstat(fd, &info) == 0) {
         char buf[1024];
         struct tm ptm;
         localtime_r(&info.st_mtime, &ptm);
