@@ -69,9 +69,9 @@ struct MetadataExtractorPrivate {
     std::unique_ptr<GstDiscoverer, decltype(&g_object_unref)> discoverer;
     MetadataExtractorPrivate() : discoverer(nullptr, g_object_unref) {};
 
-    void extract_gst(const DetectedFile &d, MediaFileBuilder &mfb);
+    void extract_gst(const int fd, MediaFileBuilder &mfb);
     bool extract_exif(const int fd, MediaFileBuilder &mfb);
-    void extract_pixbuf(const DetectedFile &d, MediaFileBuilder &mfb);
+    void extract_pixbuf(const int d, MediaFileBuilder &mfb);
 };
 
 MetadataExtractor::MetadataExtractor(int seconds) {
@@ -189,8 +189,8 @@ extract_tag_info (const GstTagList * list, const gchar * tag, gpointer user_data
     }
 }
 
-void MetadataExtractorPrivate::extract_gst(const DetectedFile &d, MediaFileBuilder &mfb) {
-    string uri = getUri(d.filename);
+void MetadataExtractorPrivate::extract_gst(const int fd, MediaFileBuilder &mfb) {
+    string uri = "file:///proc/self/fd/" + std::to_string(fd);
 
     GError *error = nullptr;
     unique_ptr<GstDiscovererInfo, void(*)(void *)> info(
@@ -200,9 +200,7 @@ void MetadataExtractorPrivate::extract_gst(const DetectedFile &d, MediaFileBuild
         string errortxt(error->message);
         g_error_free(error);
 
-        string msg = "Discovery of file ";
-        msg += d.filename;
-        msg += " failed: ";
+        string msg = "Discovery of file failed: ";
         msg += errortxt;
         throw runtime_error(msg);
     }
@@ -213,7 +211,7 @@ void MetadataExtractorPrivate::extract_gst(const DetectedFile &d, MediaFileBuild
     }
 
     if (gst_discoverer_info_get_result(info.get()) != GST_DISCOVERER_OK) {
-        throw runtime_error("Unable to discover file " + d.filename);
+        throw runtime_error("Unable to discover file.");
     }
 
     const GstTagList *tags = gst_discoverer_info_get_tags(info.get());
@@ -407,18 +405,17 @@ bool MetadataExtractorPrivate::extract_exif(const int fd, MediaFileBuilder &mfb)
     return true;
 }
 
-void MetadataExtractorPrivate::extract_pixbuf(const DetectedFile &d, MediaFileBuilder &mfb) {
+void MetadataExtractorPrivate::extract_pixbuf(const int fd, MediaFileBuilder &mfb) {
+    const string filename = "/proc/self/fd/" + std::to_string(fd);
     gint width, height;
 
-    if(!gdk_pixbuf_get_file_info(d.filename.c_str(), &width, &height)) {
-        string msg("Could not determine resolution of ");
-        msg += d.filename;
-        msg += ".";
+    if(!gdk_pixbuf_get_file_info(filename.c_str(), &width, &height)) {
+        string msg("Could not determine resolution of image.");
         throw runtime_error(msg);
     }
 
     struct stat info;
-    if(stat(d.filename.c_str(), &info) == 0) {
+    if(stat(filename.c_str(), &info) == 0) {
         char buf[1024];
         struct tm ptm;
         localtime_r(&info.st_mtime, &ptm);
@@ -449,11 +446,11 @@ MediaFile MetadataExtractor::extract(const DetectedFile &d) {
     switch (d.type) {
     case ImageMedia:
         if(!p->extract_exif(*fd, mfb)) {
-            p->extract_pixbuf(d, mfb);
+            p->extract_pixbuf(*fd, mfb);
         }
         break;
     default:
-        p->extract_gst(d, mfb);
+        p->extract_gst(*fd, mfb);
         break;
     }
 
