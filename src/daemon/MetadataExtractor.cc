@@ -41,6 +41,7 @@
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <sys/mman.h>
 #include<fcntl.h>
 #include<cstring>
 
@@ -61,6 +62,33 @@ void validate_against_blacklist(const std::string &filename, const std::string &
 const char exif_date_template[] = "%Y:%m:%d %H:%M:%S";
 const char iso8601_date_format[] = "%Y-%m-%dT%H:%M:%S";
 const char iso8601_date_with_zone_format[] = "%Y-%m-%dT%H:%M:%S%z";
+
+struct MmapKeeper {
+    int fsize;
+    void *mapping;
+
+    MmapKeeper(int fd) {
+        fsize = lseek(fd, 0, SEEK_END);
+        mapping = mmap(nullptr, fsize, PROT_READ, MAP_PRIVATE, fd, 0);
+        if(mapping == (void*) -1) {
+            std::string msg("Could not mmap input file: ");
+            msg += strerror(errno);
+            throw std::runtime_error(msg);
+        }
+    }
+    ~MmapKeeper() {
+        munmap(mapping, fsize);
+    }
+
+    unsigned char * buf() const {
+        return static_cast<unsigned char*>(mapping);
+    }
+
+    int size() const {
+        return fsize;
+    }
+};
+
 }
 
 namespace mediascanner {
@@ -382,12 +410,9 @@ static void parse_exif_location(ExifData *data, ExifByteOrder order, MediaFileBu
 bool MetadataExtractorPrivate::extract_exif(const int fd, MediaFileBuilder &mfb) {
     std::unique_ptr<ExifLoader, void(*)(ExifLoader*)> loader(
         exif_loader_new(), exif_loader_unref);
-    // Load file into memory. If this is deemed too heavy, we could do an mmap instead.
-    auto fsize = lseek(fd, 0, SEEK_END);
-    lseek(fd, 0, SEEK_SET);
-    std::unique_ptr<unsigned char[]> exifbuf(new unsigned char[fsize]);
-    read(fd, &exifbuf[0], fsize);
-    exif_loader_write(loader.get(), &exifbuf[0], fsize);
+
+    std::unique_ptr<MmapKeeper> exifbuf(new MmapKeeper(fd));
+    exif_loader_write(loader.get(), exifbuf->buf(), exifbuf->size());
 
     std::unique_ptr<ExifData, void(*)(ExifData*)> data(
         exif_loader_get_data(loader.get()), exif_data_unref);
