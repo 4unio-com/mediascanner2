@@ -41,6 +41,8 @@
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include<fcntl.h>
+#include<cstring>
 
 using namespace std;
 
@@ -68,7 +70,7 @@ struct MetadataExtractorPrivate {
     MetadataExtractorPrivate() : discoverer(nullptr, g_object_unref) {};
 
     void extract_gst(const DetectedFile &d, MediaFileBuilder &mfb);
-    bool extract_exif(const DetectedFile &d, MediaFileBuilder &mfb);
+    bool extract_exif(const int fd, MediaFileBuilder &mfb);
     void extract_pixbuf(const DetectedFile &d, MediaFileBuilder &mfb);
 };
 
@@ -379,10 +381,15 @@ static void parse_exif_location(ExifData *data, ExifByteOrder order, MediaFileBu
     mfb.setLongitude(longitude);
 }
 
-bool MetadataExtractorPrivate::extract_exif(const DetectedFile &d, MediaFileBuilder &mfb) {
+bool MetadataExtractorPrivate::extract_exif(const int fd, MediaFileBuilder &mfb) {
     std::unique_ptr<ExifLoader, void(*)(ExifLoader*)> loader(
         exif_loader_new(), exif_loader_unref);
-    exif_loader_write_file(loader.get(), d.filename.c_str());
+    // Load file into memory. If this is deemed too heavy, we could do an mmap instead.
+    auto fsize = lseek(fd, 0, SEEK_END);
+    lseek(fd, 0, SEEK_SET);
+    std::unique_ptr<unsigned char[]> exifbuf(new unsigned char[fsize]);
+    read(fd, &exifbuf[0], fsize);
+    exif_loader_write(loader.get(), &exifbuf[0], fsize);
 
     std::unique_ptr<ExifData, void(*)(ExifData*)> data(
         exif_loader_get_data(loader.get()), exif_data_unref);
@@ -428,13 +435,20 @@ void MetadataExtractorPrivate::extract_pixbuf(const DetectedFile &d, MediaFileBu
 MediaFile MetadataExtractor::extract(const DetectedFile &d) {
     printf("Extracting metadata from %s.\n", d.filename.c_str());
     MediaFileBuilder mfb(d.filename);
+    std::unique_ptr<int, void(*)(int*)> fd(new int, [](int*i) { close(*i); delete i; });
     mfb.setETag(d.etag);
     mfb.setContentType(d.content_type);
     mfb.setType(d.type);
+    *fd = open(d.filename.c_str(), O_RDONLY);
+    if(*fd < 0) {
+        std::string msg("Unable to open file: ");
+        msg += strerror(errno);
+        throw std::runtime_error(msg);
+    }
 
     switch (d.type) {
     case ImageMedia:
-        if(!p->extract_exif(d, mfb)) {
+        if(!p->extract_exif(*fd, mfb)) {
             p->extract_pixbuf(d, mfb);
         }
         break;
