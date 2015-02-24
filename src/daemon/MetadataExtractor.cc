@@ -457,16 +457,16 @@ void MetadataExtractorPrivate::extract_pixbuf(const int fd, MediaFileBuilder &mf
 MediaFile MetadataExtractor::extract(const DetectedFile &d) {
     printf("Extracting metadata from %s.\n", d.filename.c_str());
     MediaFileBuilder mfb(d.filename);
-    std::unique_ptr<int, void(*)(int*)> fd(new int, [](int*i) { close(*i); delete i; });
-    mfb.setETag(d.etag);
-    mfb.setContentType(d.content_type);
-    mfb.setType(d.type);
+    std::unique_ptr<int, void(*)(int*)> fd(new int, [](int*i) { if(*i>=0) { close(*i); } delete i; });
     *fd = open(d.filename.c_str(), O_RDONLY);
     if(*fd < 0) {
         std::string msg("Unable to open file: ");
         msg += strerror(errno);
         throw std::runtime_error(msg);
     }
+    mfb.setETag(d.etag);
+    mfb.setContentType(d.content_type);
+    mfb.setType(d.type);
 
     switch (d.type) {
     case ImageMedia:
