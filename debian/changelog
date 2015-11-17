@@ -1,3 +1,9 @@
+mediascanner2 (0.108+16.04.20151109-0ubuntu2) UNRELEASED; urgency=medium
+
+  * Force rebuild against dbus-cpp. 
+
+ -- Thomas Voß <thomas.voss@canonical.com>  Tue, 17 Nov 2015 09:26:50 +0100
+
 mediascanner2 (0.108+16.04.20151109-0ubuntu1) xenial; urgency=medium
 
   * Move the metadata extractor to a separate process to isolate bugs in
