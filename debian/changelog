@@ -1,3 +1,14 @@
+mediascanner2 (0.111+16.04.20160504.1-0ubuntu1) xenial; urgency=medium
+
+  [ Alex Tu ]
+  * apparmor: extend read permissions to cover media_codecs*.xml to
+    support Turbo.
+
+  [ Robert Bruce Park ]
+  * Use new bileto_pre_release_hook.
+
+ -- James Henstridge <james.henstridge@canonical.com>  Wed, 04 May 2016 19:01:38 +0000
+
 mediascanner2 (0.111+16.04.20160317-0ubuntu1) xenial; urgency=medium
 
   * If a file is unscannable, insert a fallback MediaFile into the index
