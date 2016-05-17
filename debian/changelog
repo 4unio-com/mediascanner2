@@ -2,7 +2,7 @@ mediascanner2 (0.111+16.04.20160517-0ubuntu1) yakkety; urgency=medium
 
   * No-change rebuild to see how train handles manual changelogs. Please ignore.
 
- -- Robert Bruce Park <robert.park@canonical.com>  Tue, 17 May 2016 16:19:29 -0700
+ -- Robert Bruce Park <robert.park@canonical.com>  Tue, 17 May 2016 23:32:13 +0000
 
 mediascanner2 (0.111+16.04.20160317-0ubuntu1) xenial; urgency=medium
 
