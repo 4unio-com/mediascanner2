@@ -73,6 +73,7 @@ public:
 
 private:
     MediaFilePrivate *p;
+    int padding = 0;
 };
 
 }
