@@ -25,8 +25,8 @@ namespace mediascanner {
 enum MediaType {
     UnknownMedia,
     AudioMedia,
-    VideoMedia,
     ImageMedia,
+    VideoMedia,
     AllMedia = 255,
 };
 
