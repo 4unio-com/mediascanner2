@@ -1,3 +1,9 @@
+mediascanner2 (0.112+17.04.20161021.1-0ubuntu1) zesty; urgency=medium
+
+  * Break the ABI
+
+ -- James Henstridge <james.henstridge@canonical.com>  Fri, 21 Oct 2016 12:08:22 +0000
+
 mediascanner2 (0.112+16.10.20160909-0ubuntu1) yakkety; urgency=medium
 
   [ James Henstridge ]

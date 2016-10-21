@@ -34,7 +34,7 @@ libmediascanner-2.0.so.3 libmediascanner-2.0-3 #MINVER#
  (c++)"mediascanner::Filter::hasAlbum() const@Base" 0.101+14.10.20140613
  (c++)"mediascanner::Filter::hasArtist() const@Base" 0.101+14.10.20140613
  (c++)"mediascanner::Filter::hasGenre() const@Base" 0.101+14.10.20140613
- (c++)"mediascanner::Filter::newMethod()@Base" 0replaceme
+ (c++)"mediascanner::Filter::newMethod()@Base" 0.112+17.04.20161021.1-0ubuntu1
  (c++)"mediascanner::Filter::operator=(mediascanner::Filter&&)@Base" 0.105+14.10.20140903
  (c++)"mediascanner::Filter::operator=(mediascanner::Filter const&)@Base" 0.101+14.10.20140613
  (c++)"mediascanner::Filter::operator==(mediascanner::Filter const&) const@Base" 0.101+14.10.20140613
