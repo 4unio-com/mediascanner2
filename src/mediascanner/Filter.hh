@@ -69,6 +69,8 @@ public:
     void setReverse(bool reverse);
     bool getReverse() const;
 
+    void newMethod();
+
 private:
     struct Private;
     Private *p;

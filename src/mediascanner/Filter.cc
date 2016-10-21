@@ -207,4 +207,7 @@ bool Filter::getReverse() const {
     return p->reverse;
 }
 
+void Filter::newMethod() {
+}
+
 }
