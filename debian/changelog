@@ -1,3 +1,9 @@
+mediascanner2 (0.112+17.04.20161219-0ubuntu1) zesty; urgency=medium
+
+  * Compatibility with unversioned cmake-extras modules (LP: #1563573)
+
+ -- Pete Woods <pete.woods@canonical.com>  Mon, 19 Dec 2016 09:36:01 +0000
+
 mediascanner2 (0.112+17.04.20161201-0ubuntu1) zesty; urgency=medium
 
   [ James Henstridge ]
