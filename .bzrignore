@@ -15,3 +15,7 @@ debian/tmp
 debian/*.debhelper
 debian/*.log
 debian/*.substvars
+./parts
+./prime
+./stage
+*.snap

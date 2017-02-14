@@ -1,0 +1,70 @@
+name: mediascanner2
+version: '0.112'
+summary: Indexer for music, videos and photos
+description: |
+ This library provides convenient and safe access to the media scanner's
+ index files.
+
+grade: devel # must be 'stable' to release into candidate/stable channels
+confinement: strict
+
+plugs:
+  platform:
+    interface: content
+    content: ubuntu-app-platform1
+    target: ubuntu-app-platform
+    default-provider: ubuntu-app-platform
+
+slots:
+  mediascanner-daemon:
+    interface: dbus
+    bus: session
+    name: com.canonical.MediaScanner2.Daemon
+
+apps:
+  service:
+    command: desktop-launch $SNAP/bin/mediascanner-service-2.0
+    plugs:
+      - network # Ugh.  GDBus needs this for recvfrom syscall
+      - platform
+    slots:
+      - mediascanner-daemon
+
+parts:
+  mediascanner:
+    # See 'snapcraft plugins'
+    plugin: cmake
+    source: .
+    after:
+      - desktop-ubuntu-app-platform
+    install: |
+      mkdir -p $SNAPCRAFT_PART_INSTALL/ubuntu-app-platform
+    prime:
+      - bin/mediascanner-service-2.0
+      - lib/libmediascanner-2.0.so*
+      - lib/mediascanner-2.0/mediascanner-extractor
+      - lib/qt5/qml/*
+      - share/dbus-1/services/com.canonical.MediaScanner2.Extractor.service
+      - ubuntu-app-platform
+    build-packages:
+      - cmake-extras
+      - libapparmor-dev
+      - libdbus-1-dev
+      - libdbus-cpp-dev
+      - libexif-dev
+      - libglib2.0-dev
+      - libgstreamer-plugins-base1.0-dev
+      - libgstreamer1.0-dev
+      - libgdk-pixbuf2.0-dev
+      - libgtest-dev
+      - libproperties-cpp-dev
+      - libsqlite3-dev
+      - libtag1-dev
+      - libudisks2-dev
+      - lsb-release
+      - qtbase5-dev
+      - qtbase5-dev-tools
+      - qtdeclarative5-dev
+      - qtdeclarative5-dev-tools
+      - qtdeclarative5-qtquick2-plugin
+      - qtdeclarative5-test-plugin
