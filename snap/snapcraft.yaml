@@ -69,6 +69,7 @@ parts:
       - share/dbus-1/services/com.canonical.MediaScanner2.Extractor.service
       - ubuntu-app-platform
     build-packages:
+      - build-essential
       - cmake-extras
       - libapparmor-dev
       - libdbus-1-dev
@@ -101,3 +102,5 @@ parts:
     prime:
       - app
       - music-app@30.png
+    build-packages:
+      - intltool
