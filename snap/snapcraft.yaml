@@ -14,12 +14,18 @@ plugs:
     content: ubuntu-app-platform1
     target: ubuntu-app-platform
     default-provider: ubuntu-app-platform
+  thumbnailer:
+    interface: thumbnailer
 
 slots:
   mediascanner-daemon:
     interface: dbus
     bus: session
     name: com.canonical.MediaScanner2.Daemon
+  mediascanner-extractor:
+    interface: dbus
+    bus: session
+    name: com.canonical.MediaScanner2.Extractor
 
 apps:
   service:
@@ -29,12 +35,28 @@ apps:
       - platform
     slots:
       - mediascanner-daemon
+  extractor:
+    command: desktop-launch $SNAP/lib/mediascanner-2.0/mediascanner-extractor
+    plugs:
+      - network
+      - platform
+    slots:
+      - mediascanner-extractor
+  music-app:
+    command: desktop-launch qmlscene $SNAP/app/music-app.qml -I $SNAP/lib/qt5/qml
+    plugs:
+      - platform
+      - unity7
+      - opengl
+      - thumbnailer
 
 parts:
   mediascanner:
     # See 'snapcraft plugins'
     plugin: cmake
     source: .
+    configflags:
+      - -DSNAP_BUILD=1
     after:
       - desktop-ubuntu-app-platform
     install: |
@@ -68,3 +90,14 @@ parts:
       - qtdeclarative5-dev-tools
       - qtdeclarative5-qtquick2-plugin
       - qtdeclarative5-test-plugin
+
+  music-app:
+    plugin: cmake
+    source: lp:music-app
+    configflags:
+      - -DCLICK_MODE=1 -DINSTALL_TESTS=0
+    after:
+      - desktop-ubuntu-app-platform
+    prime:
+      - app
+      - music-app@30.png

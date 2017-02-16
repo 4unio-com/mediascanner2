@@ -1,6 +1,10 @@
 add_definitions(${MEDIASCANNER_DEPS_CFLAGS} ${UDISKS_CFLAGS})
 include_directories(..)
 
+if(SNAP_BUILD)
+  add_definitions(-DSNAP_BUILD)
+endif()
+
 add_library(scannerstuff STATIC
   InvalidationSender.cc
   MountWatcher.cc

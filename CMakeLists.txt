@@ -20,6 +20,8 @@ endif()
 
 option(full_warnings "All possible compiler warnings." OFF)
 
+option(SNAP_BUILD "Turn on snapd specific features" OFF)
+
 include(FindPkgConfig)
 pkg_check_modules(MEDIASCANNER_DEPS REQUIRED
   gio-2.0

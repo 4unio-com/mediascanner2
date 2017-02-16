@@ -17,6 +17,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include<array>
 #include<cassert>
 #include<cstdio>
 #include<cstring>
@@ -71,6 +72,7 @@ private:
     void setupBus();
     void setupSignals();
     void setupMountWatcher();
+    void setupDefaultVolumes();
     static gboolean signalCallback(gpointer data);
     static void busNameLostCallback(GDBusConnection *connection, const char *name, gpointer data);
     void mountEvent(const MountWatcher::Info &info);
@@ -96,23 +98,7 @@ ScannerDaemon::ScannerDaemon() :
     volumes.reset(new VolumeManager(*store, *extractor, invalidator));
 
     setupMountWatcher();
-
-    const char *musicdir = g_get_user_special_dir(G_USER_DIRECTORY_MUSIC);
-    const char *videodir = g_get_user_special_dir(G_USER_DIRECTORY_VIDEOS);
-    const char *picturesdir = g_get_user_special_dir(G_USER_DIRECTORY_PICTURES);
-    const char *homedir = g_get_home_dir();
-
-    // According to XDG specification, when one of the special dirs is missing
-    // it falls back to home directory. This would mean scanning the entire home
-    // directory. This is probably not what people want so skip if this is the case.
-    if (musicdir && !is_same_directory(musicdir, homedir))
-        volumes->queueAddVolume(musicdir);
-
-    if (videodir && !is_same_directory(videodir, homedir))
-        volumes->queueAddVolume(videodir);
-
-    if (picturesdir && !is_same_directory(picturesdir, homedir))
-        volumes->queueAddVolume(picturesdir);
+    setupDefaultVolumes();
 
     // In case someone opened the db file before we could populate it.
     invalidator.invalidate();
@@ -188,6 +174,40 @@ void ScannerDaemon::setupMountWatcher() {
         fprintf(stderr, "Removable media support disabled\n");
         return;
     }
+}
+
+void ScannerDaemon::setupDefaultVolumes() {
+    const char *musicdir = g_get_user_special_dir(G_USER_DIRECTORY_MUSIC);
+    const char *videodir = g_get_user_special_dir(G_USER_DIRECTORY_VIDEOS);
+    const char *picturesdir = g_get_user_special_dir(G_USER_DIRECTORY_PICTURES);
+    const char *homedir = g_get_home_dir();
+
+    // According to XDG specification, when one of the special dirs is missing
+    // it falls back to home directory. This would mean scanning the entire home
+    // directory. This is probably not what people want so skip if this is the case.
+    if (musicdir && !is_same_directory(musicdir, homedir))
+        volumes->queueAddVolume(musicdir);
+
+    if (videodir && !is_same_directory(videodir, homedir))
+        volumes->queueAddVolume(videodir);
+
+    if (picturesdir && !is_same_directory(picturesdir, homedir))
+        volumes->queueAddVolume(picturesdir);
+
+#ifdef SNAP_BUILD
+    const char *snap_user_common = g_getenv("SNAP_USER_COMMON");
+    if (snap_user_common) {
+        static array<const char*, 3> folders{{ "Music", "Videos", "Pictures"}};
+        for (const auto folder : folders) {
+            unique_ptr<char, decltype(&g_free)> dirname(
+                g_build_filename(snap_user_common, folder, nullptr), &g_free);
+            if (g_mkdir_with_parents(dirname.get(), 0755) != 0) {
+                continue;
+            }
+            volumes->queueAddVolume(dirname.get());
+        }
+    }
+#endif
 }
 
 void ScannerDaemon::mountEvent(const MountWatcher::Info& info) {
