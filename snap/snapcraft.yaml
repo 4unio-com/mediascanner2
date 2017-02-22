@@ -45,9 +45,11 @@ apps:
   music-app:
     command: desktop-launch qmlscene $SNAP/app/music-app.qml -I $SNAP/lib/qt5/qml
     plugs:
-      - platform
-      - unity7
+      - network
       - opengl
+      - pulseaudio
+      - unity7
+      - platform
       - thumbnailer
 
 parts:
@@ -91,6 +93,8 @@ parts:
       - qtdeclarative5-dev-tools
       - qtdeclarative5-qtquick2-plugin
       - qtdeclarative5-test-plugin
+    build-attributes:
+      - no-system-libraries
 
   music-app:
     plugin: cmake
@@ -104,3 +108,5 @@ parts:
       - music-app@30.png
     build-packages:
       - intltool
+    build-attributes:
+      - no-system-libraries
